@@ -8,127 +8,193 @@ on:
   workflow_dispatch:
     inputs:
       browser:
-        description: 'Browser to use'
+        description: 'Browser'
         required: false
         default: 'chromium'
         type: choice
         options: [ chromium, firefox, webkit ]
-      headless:
-        description: 'Run headless'
-        required: false
-        default: 'true'
       filter:
-        description: 'Test filter (tag or test name)'
+        description: 'Tag filter (e.g. Smoke, EmployeeManagement)'
         required: false
         default: ''
 
 env:
   DOTNET_VERSION: '8.0.x'
+  NODE_VERSION: '20'
   TEST_PROJECT: 'OrangeHRM.UIAutomation.Tests/OrangeHRM.UIAutomation.Tests.csproj'
+  APP_REPO: 'priyankapolapallyibm/orangehrm'
 
 jobs:
-  ui-tests:
-    name: UI Tests (${{ github.event.inputs.browser || 'chromium' }})
+  # ──────────────────────────────────────────────────────────────────────────
+  # JOB 1: Build & validate the test project compiles cleanly
+  # ──────────────────────────────────────────────────────────────────────────
+  build:
+    name: Build Test Project
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-
-    services:
-      # Start PeopleFlow API
-      peopleflow-api:
-        image: node:20
-        options: >-
-          --health-cmd "curl -f http://localhost:3000/api/health || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-
     steps:
-      - name: Checkout automation repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup .NET ${{ env.DOTNET_VERSION }}
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Restore NuGet packages
+      - name: Restore & Build
+        run: |
+          dotnet restore ${{ env.TEST_PROJECT }}
+          dotnet build ${{ env.TEST_PROJECT }} --no-restore --configuration Release
+
+      - name: Cache build output
+        uses: actions/cache/save@v4
+        with:
+          path: OrangeHRM.UIAutomation.Tests/bin
+          key: build-${{ github.sha }}
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # JOB 2: Run all UI tests (full suite)
+  # ──────────────────────────────────────────────────────────────────────────
+  ui-tests:
+    name: UI Tests — ${{ github.event.inputs.browser || 'chromium' }}
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 60
+
+    steps:
+      # ── Checkout both repos ─────────────────────────────────────────────
+      - name: Checkout automation repo
+        uses: actions/checkout@v4
+        with:
+          path: automation
+
+      - name: Checkout PeopleFlow app repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.APP_REPO }}
+          path: app
+
+      # ── Setup runtimes ──────────────────────────────────────────────────
+      - name: Setup .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      # ── Start PeopleFlow application ────────────────────────────────────
+      - name: Install PeopleFlow dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Setup database
+        working-directory: app
+        run: npm run db:setup
+
+      - name: Start PeopleFlow API (background)
+        working-directory: app
+        run: |
+          npm run dev > /tmp/app.log 2>&1 &
+          echo "APP_PID=$!" >> $GITHUB_ENV
+          echo "Waiting for API to be ready..."
+          for i in {1..40}; do
+            if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
+              echo "✅ API is ready (attempt $i)"
+              break
+            fi
+            echo "  Attempt $i/40 — waiting 3s..."
+            sleep 3
+          done
+          curl -sf http://localhost:3000/api/health || (echo "❌ API failed to start"; cat /tmp/app.log; exit 1)
+
+      - name: Start PeopleFlow Web UI (background)
+        working-directory: app
+        run: |
+          echo "Waiting for Web UI to be ready..."
+          for i in {1..20}; do
+            if curl -sf http://localhost:5173 > /dev/null 2>&1; then
+              echo "✅ Web UI is ready (attempt $i)"
+              break
+            fi
+            echo "  Attempt $i/20 — waiting 2s..."
+            sleep 2
+          done
+          curl -sf http://localhost:5173 || echo "⚠️ Web UI may still be starting — continuing"
+
+      - name: Verify application stack
+        run: |
+          echo "=== Health Check ==="
+          curl -s http://localhost:3000/api/health | python3 -m json.tool
+          echo "=== Web UI status ==="
+          curl -sI http://localhost:5173 | head -3
+
+      # ── Build & install Playwright ───────────────────────────────────────
+      - name: Restore automation project
+        working-directory: automation
         run: dotnet restore ${{ env.TEST_PROJECT }}
 
-      - name: Build solution
+      - name: Build automation project
+        working-directory: automation
         run: dotnet build ${{ env.TEST_PROJECT }} --no-restore --configuration Release
 
-      - name: Install Playwright browsers
+      - name: Install Playwright with dependencies
+        working-directory: automation/OrangeHRM.UIAutomation.Tests
         run: |
-          cd OrangeHRM.UIAutomation.Tests
           dotnet build --configuration Release
-          pwsh bin/Release/net8.0/playwright.ps1 install --with-deps chromium firefox webkit
+          pwsh bin/Release/net8.0/playwright.ps1 install --with-deps ${{ github.event.inputs.browser || 'chromium' }}
 
-      - name: Start PeopleFlow application
-        run: |
-          # Clone and start the main app for integration
-          git clone https://github.com/priyankapolapallyibm/orangehrm.git /tmp/peopleflow
-          cd /tmp/peopleflow
-          npm ci
-          npx prisma generate --schema=apps/api/prisma/schema.prisma
-          npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma
-          npx prisma db seed --schema=apps/api/prisma/schema.prisma &
-          npm run dev &
-          echo "Waiting for app to start..."
-          sleep 20
-          curl -f http://localhost:3000/api/health || (echo "API failed to start" && exit 1)
-          curl -f http://localhost:5173 || echo "UI starting..."
-        continue-on-error: true
-
+      # ── Run tests ────────────────────────────────────────────────────────
       - name: Run UI Automation Tests
+        working-directory: automation
         env:
           TEST_TestSettings__BaseUrl: http://localhost:5173
           TEST_TestSettings__ApiBaseUrl: http://localhost:3000/api
           TEST_TestSettings__Browser: ${{ github.event.inputs.browser || 'chromium' }}
-          TEST_TestSettings__Headless: ${{ github.event.inputs.headless || 'true' }}
+          TEST_TestSettings__Headless: 'true'
           TEST_TestSettings__ScreenshotOnFailure: 'true'
+          TEST_TestSettings__DefaultTimeout: '30000'
         run: |
           FILTER="${{ github.event.inputs.filter }}"
           if [ -n "$FILTER" ]; then
+            echo "Running with filter: Category=$FILTER"
             dotnet test ${{ env.TEST_PROJECT }} \
               --no-build --configuration Release \
-              --logger "trx;LogFileName=test-results.trx" \
+              --logger "trx;LogFileName=TestResults.trx" \
               --logger "console;verbosity=normal" \
               --filter "Category=$FILTER" \
-              -- NUnit.WorkingDirectory=. || true
+              -- NUnit.WorkingDirectory=$(pwd)/OrangeHRM.UIAutomation.Tests
           else
+            echo "Running full test suite"
             dotnet test ${{ env.TEST_PROJECT }} \
               --no-build --configuration Release \
-              --logger "trx;LogFileName=test-results.trx" \
+              --logger "trx;LogFileName=TestResults.trx" \
               --logger "console;verbosity=normal" \
-              -- NUnit.WorkingDirectory=. || true
+              -- NUnit.WorkingDirectory=$(pwd)/OrangeHRM.UIAutomation.Tests
           fi
 
-      - name: Publish TRX Test Results
-        uses: dorny/test-reporter@v1
-        if: always()
-        with:
-          name: NUnit Test Results
-          path: '**/*.trx'
-          reporter: dotnet-trx
-          fail-on-error: false
-
-      - name: Upload HTML Report
+      # ── Collect artifacts ────────────────────────────────────────────────
+      - name: Upload ExtentReports HTML Report
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: extent-report-${{ github.run_number }}
+          name: ui-test-report-${{ github.run_number }}
           path: |
-            OrangeHRM.UIAutomation.Tests/bin/Release/net8.0/Reports/
+            automation/OrangeHRM.UIAutomation.Tests/bin/Release/net8.0/Reports/
           retention-days: 30
+          if-no-files-found: warn
 
       - name: Upload Failure Screenshots
         uses: actions/upload-artifact@v4
-        if: failure()
+        if: always()
         with:
           name: failure-screenshots-${{ github.run_number }}
           path: |
-            OrangeHRM.UIAutomation.Tests/bin/Release/net8.0/Reports/Screenshots/
+            automation/OrangeHRM.UIAutomation.Tests/bin/Release/net8.0/Reports/Screenshots/FAIL_*.png
           retention-days: 14
+          if-no-files-found: ignore
 
       - name: Upload TRX Results
         uses: actions/upload-artifact@v4
@@ -137,30 +203,191 @@ jobs:
           name: trx-results-${{ github.run_number }}
           path: '**/*.trx'
           retention-days: 14
+          if-no-files-found: warn
 
-  smoke-tests:
-    name: Smoke Tests (PR gate)
+      - name: Publish Test Results (PR comment)
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: NUnit UI Test Results
+          path: '**/*.trx'
+          reporter: dotnet-trx
+          fail-on-error: false
+
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "## 🧪 UI Test Run Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Browser | ${{ github.event.inputs.browser || 'chromium' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Filter | ${{ github.event.inputs.filter || 'All tests' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Run # | ${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📎 Artifacts: ui-test-report-${{ github.run_number }} (HTML Report)" >> $GITHUB_STEP_SUMMARY
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # JOB 3: Smoke tests only — fast PR gate (parallel with ui-tests)
+  # ──────────────────────────────────────────────────────────────────────────
+  smoke-gate:
+    name: Smoke Gate (PR Fast Check)
     runs-on: ubuntu-latest
+    needs: build
     if: github.event_name == 'pull_request'
     timeout-minutes: 20
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout automation repo
+        uses: actions/checkout@v4
+        with:
+          path: automation
+
+      - name: Checkout PeopleFlow app repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.APP_REPO }}
+          path: app
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - run: dotnet restore ${{ env.TEST_PROJECT }}
-      - run: dotnet build ${{ env.TEST_PROJECT }} --no-restore --configuration Release
-      - name: Install Playwright Chromium only
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Start PeopleFlow stack
+        working-directory: app
         run: |
-          cd OrangeHRM.UIAutomation.Tests
+          npm ci
+          npm run db:setup
+          npm run dev > /tmp/app.log 2>&1 &
+          echo "Waiting for app stack..."
+          for i in {1..40}; do
+            if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
+              echo "✅ API ready (attempt $i)"; break
+            fi
+            sleep 3
+          done
+          curl -sf http://localhost:3000/api/health || (cat /tmp/app.log && exit 1)
+
+      - name: Build automation
+        working-directory: automation
+        run: |
+          dotnet restore ${{ env.TEST_PROJECT }}
+          dotnet build ${{ env.TEST_PROJECT }} --no-restore --configuration Release
+
+      - name: Install Playwright Chromium
+        working-directory: automation/OrangeHRM.UIAutomation.Tests
+        run: |
           dotnet build --configuration Release
           pwsh bin/Release/net8.0/playwright.ps1 install --with-deps chromium
-      - name: Run Smoke Tests only
+
+      - name: Run Smoke Tests
+        working-directory: automation
         env:
+          TEST_TestSettings__BaseUrl: http://localhost:5173
+          TEST_TestSettings__ApiBaseUrl: http://localhost:3000/api
           TEST_TestSettings__Browser: chromium
           TEST_TestSettings__Headless: 'true'
         run: |
           dotnet test ${{ env.TEST_PROJECT }} \
             --no-build --configuration Release \
+            --logger "trx;LogFileName=SmokeResults.trx" \
+            --logger "console;verbosity=normal" \
             --filter "Category=Smoke" \
-            --logger "console;verbosity=normal" || true
+            -- NUnit.WorkingDirectory=$(pwd)/OrangeHRM.UIAutomation.Tests
+
+      - name: Upload Smoke Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-results-${{ github.run_number }}
+          path: '**/*.trx'
+          retention-days: 7
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # JOB 4: Cross-browser matrix (manual or scheduled)
+  # ──────────────────────────────────────────────────────────────────────────
+  cross-browser:
+    name: Cross-Browser — ${{ matrix.browser }}
+    runs-on: ubuntu-latest
+    needs: ui-tests
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.browser == 'chromium'
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [ firefox, webkit ]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: automation
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.APP_REPO }}
+          path: app
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Start PeopleFlow stack
+        working-directory: app
+        run: |
+          npm ci
+          npm run db:setup
+          npm run dev > /tmp/app.log 2>&1 &
+          echo "Waiting for app stack..."
+          for i in {1..40}; do
+            if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
+              echo "✅ API ready (attempt $i)"; break
+            fi
+            sleep 3
+          done
+          curl -sf http://localhost:3000/api/health || (cat /tmp/app.log && exit 1)
+
+      - name: Build automation
+        working-directory: automation
+        run: |
+          dotnet restore ${{ env.TEST_PROJECT }}
+          dotnet build ${{ env.TEST_PROJECT }} --no-restore --configuration Release
+
+      - name: Install Playwright ${{ matrix.browser }}
+        working-directory: automation/OrangeHRM.UIAutomation.Tests
+        run: |
+          dotnet build --configuration Release
+          pwsh bin/Release/net8.0/playwright.ps1 install --with-deps ${{ matrix.browser }}
+
+      - name: Run Smoke Tests on ${{ matrix.browser }}
+        working-directory: automation
+        env:
+          TEST_TestSettings__BaseUrl: http://localhost:5173
+          TEST_TestSettings__Browser: ${{ matrix.browser }}
+          TEST_TestSettings__Headless: 'true'
+        run: |
+          dotnet test ${{ env.TEST_PROJECT }} \
+            --no-build --configuration Release \
+            --logger "trx;LogFileName=${{ matrix.browser }}-Results.trx" \
+            --filter "Category=Smoke" \
+            -- NUnit.WorkingDirectory=$(pwd)/OrangeHRM.UIAutomation.Tests
+
+      - name: Upload ${{ matrix.browser }} results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.browser }}-results-${{ github.run_number }}
+          path: '**/*.trx'
+          retention-days: 14
+
