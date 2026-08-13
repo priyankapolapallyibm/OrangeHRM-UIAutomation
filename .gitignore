@@ -1,0 +1,39 @@
+## .NET build artifacts
+**/bin/
+**/obj/
+*.user
+*.suo
+.vs/
+*.DotSettings.user
+
+## Test reports and screenshots (generated at runtime)
+OrangeHRM.UIAutomation.Tests/Reports/*.html
+OrangeHRM.UIAutomation.Tests/Reports/Screenshots/*.png
+!OrangeHRM.UIAutomation.Tests/Reports/.gitkeep
+!OrangeHRM.UIAutomation.Tests/Reports/Screenshots/.gitkeep
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+## OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## IDE
+.idea/
+*.swp
+*.swo
+
+## Test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+## Secrets / environment overrides
+appsettings.local.json
+.env

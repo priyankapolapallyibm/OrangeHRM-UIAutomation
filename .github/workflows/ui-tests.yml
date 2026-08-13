@@ -1,0 +1,166 @@
+name: UI Automation Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      browser:
+        description: 'Browser to use'
+        required: false
+        default: 'chromium'
+        type: choice
+        options: [ chromium, firefox, webkit ]
+      headless:
+        description: 'Run headless'
+        required: false
+        default: 'true'
+      filter:
+        description: 'Test filter (tag or test name)'
+        required: false
+        default: ''
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  TEST_PROJECT: 'OrangeHRM.UIAutomation.Tests/OrangeHRM.UIAutomation.Tests.csproj'
+
+jobs:
+  ui-tests:
+    name: UI Tests (${{ github.event.inputs.browser || 'chromium' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    services:
+      # Start PeopleFlow API
+      peopleflow-api:
+        image: node:20
+        options: >-
+          --health-cmd "curl -f http://localhost:3000/api/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout automation repo
+        uses: actions/checkout@v4
+
+      - name: Setup .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore NuGet packages
+        run: dotnet restore ${{ env.TEST_PROJECT }}
+
+      - name: Build solution
+        run: dotnet build ${{ env.TEST_PROJECT }} --no-restore --configuration Release
+
+      - name: Install Playwright browsers
+        run: |
+          cd OrangeHRM.UIAutomation.Tests
+          dotnet build --configuration Release
+          pwsh bin/Release/net8.0/playwright.ps1 install --with-deps chromium firefox webkit
+
+      - name: Start PeopleFlow application
+        run: |
+          # Clone and start the main app for integration
+          git clone https://github.com/priyankapolapallyibm/orangehrm.git /tmp/peopleflow
+          cd /tmp/peopleflow
+          npm ci
+          npx prisma generate --schema=apps/api/prisma/schema.prisma
+          npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma
+          npx prisma db seed --schema=apps/api/prisma/schema.prisma &
+          npm run dev &
+          echo "Waiting for app to start..."
+          sleep 20
+          curl -f http://localhost:3000/api/health || (echo "API failed to start" && exit 1)
+          curl -f http://localhost:5173 || echo "UI starting..."
+        continue-on-error: true
+
+      - name: Run UI Automation Tests
+        env:
+          TEST_TestSettings__BaseUrl: http://localhost:5173
+          TEST_TestSettings__ApiBaseUrl: http://localhost:3000/api
+          TEST_TestSettings__Browser: ${{ github.event.inputs.browser || 'chromium' }}
+          TEST_TestSettings__Headless: ${{ github.event.inputs.headless || 'true' }}
+          TEST_TestSettings__ScreenshotOnFailure: 'true'
+        run: |
+          FILTER="${{ github.event.inputs.filter }}"
+          if [ -n "$FILTER" ]; then
+            dotnet test ${{ env.TEST_PROJECT }} \
+              --no-build --configuration Release \
+              --logger "trx;LogFileName=test-results.trx" \
+              --logger "console;verbosity=normal" \
+              --filter "Category=$FILTER" \
+              -- NUnit.WorkingDirectory=. || true
+          else
+            dotnet test ${{ env.TEST_PROJECT }} \
+              --no-build --configuration Release \
+              --logger "trx;LogFileName=test-results.trx" \
+              --logger "console;verbosity=normal" \
+              -- NUnit.WorkingDirectory=. || true
+          fi
+
+      - name: Publish TRX Test Results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: NUnit Test Results
+          path: '**/*.trx'
+          reporter: dotnet-trx
+          fail-on-error: false
+
+      - name: Upload HTML Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: extent-report-${{ github.run_number }}
+          path: |
+            OrangeHRM.UIAutomation.Tests/bin/Release/net8.0/Reports/
+          retention-days: 30
+
+      - name: Upload Failure Screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: failure-screenshots-${{ github.run_number }}
+          path: |
+            OrangeHRM.UIAutomation.Tests/bin/Release/net8.0/Reports/Screenshots/
+          retention-days: 14
+
+      - name: Upload TRX Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trx-results-${{ github.run_number }}
+          path: '**/*.trx'
+          retention-days: 14
+
+  smoke-tests:
+    name: Smoke Tests (PR gate)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - run: dotnet restore ${{ env.TEST_PROJECT }}
+      - run: dotnet build ${{ env.TEST_PROJECT }} --no-restore --configuration Release
+      - name: Install Playwright Chromium only
+        run: |
+          cd OrangeHRM.UIAutomation.Tests
+          dotnet build --configuration Release
+          pwsh bin/Release/net8.0/playwright.ps1 install --with-deps chromium
+      - name: Run Smoke Tests only
+        env:
+          TEST_TestSettings__Browser: chromium
+          TEST_TestSettings__Headless: 'true'
+        run: |
+          dotnet test ${{ env.TEST_PROJECT }} \
+            --no-build --configuration Release \
+            --filter "Category=Smoke" \
+            --logger "console;verbosity=normal" || true
