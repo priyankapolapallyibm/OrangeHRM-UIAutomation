@@ -57,7 +57,7 @@ public static class ReportManager
         {
             _currentTest?.Fail(message);
             if (!string.IsNullOrEmpty(details))
-                _currentTest?.Fail($"<pre>{System.Web.HttpUtility.HtmlEncode(details)}</pre>");
+                _currentTest?.Fail($"<pre>{System.Net.WebUtility.HtmlEncode(details)}</pre>");
         }
     }
 
