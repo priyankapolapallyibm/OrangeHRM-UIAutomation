@@ -32,11 +32,11 @@ public class LoginPage : BasePage
         await PasswordInput.ClearAsync();
         await PasswordInput.FillAsync(password);
         await LoginButton.ClickAsync();
-        // Wait for either app-shell (success) or error (failure) — 15s for CI
+        // Wait for either app-shell (success) or error (failure) — 30s for CI
         try
         {
             await Page.WaitForSelectorAsync(".app-shell, [role='alert'], .error-message",
-                new PageWaitForSelectorOptions { Timeout = 15000 });
+                new PageWaitForSelectorOptions { Timeout = 30000 });
         }
         catch { /* timeout — let caller assert */ }
     }
@@ -54,10 +54,12 @@ public class LoginPage : BasePage
     public async Task<bool> IsLoggedIn()
     {
         // SPA: URL does not change; app-shell div appears after successful login
-        // Use longer timeout for CI where app startup is slower
+        // Also confirm nav buttons are rendered (app-shell may flash briefly)
         try
         {
-            await Page.WaitForSelectorAsync(".app-shell", new PageWaitForSelectorOptions { Timeout = 15000 });
+            await Page.WaitForSelectorAsync(".app-shell", new PageWaitForSelectorOptions { Timeout = 30000 });
+            // Wait for at least one nav button to be rendered inside app-shell
+            await Page.WaitForSelectorAsync(".app-shell nav button", new PageWaitForSelectorOptions { Timeout = 15000 });
             return true;
         }
         catch { return false; }

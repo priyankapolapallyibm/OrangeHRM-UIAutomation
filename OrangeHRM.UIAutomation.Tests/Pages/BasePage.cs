@@ -19,8 +19,8 @@ public abstract class BasePage
 
     protected async Task NavigateTo(string path = "")
     {
-        await Page.GotoAsync($"{BaseUrl}{path}");
-        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        // Use DOMContentLoaded — NetworkIdle never fires reliably for Vite SPA in CI
+        await Page.GotoAsync($"{BaseUrl}{path}", new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
     }
 
     protected async Task ClickNavTab(string tabName)
@@ -32,7 +32,6 @@ public abstract class BasePage
             const b = btns.find(el => el.textContent.trim().toLowerCase().includes('{tabName.ToLower()}'));
             if (b) b.click();
         ");
-        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
         await Task.Delay(500);
     }
 
