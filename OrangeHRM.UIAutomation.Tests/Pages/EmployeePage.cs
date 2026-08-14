@@ -3,128 +3,138 @@ using Microsoft.Playwright;
 namespace OrangeHRM.UIAutomation.Tests.Pages;
 
 /// <summary>
-/// POM for Employee Management page.
-/// US: Employee List/Search, Add Employee, Edit/Delete Employee.
+/// POM for Employee Management page (.employees-page).
+/// The form opens in a modal (.modal-backdrop > .employee-form) via "Add employee" button.
+/// Labels wrap inputs: label:has-text('First name') input, etc.
+/// Delete uses window.confirm — must accept the dialog.
 /// </summary>
 public class EmployeePage : BasePage
 {
-    private ILocator AddEmployeeButton   => Page.Locator("button:has-text('Add Employee'), button:has-text('Add')").First;
-    private ILocator SearchInput         => Page.Locator("input[placeholder*='search' i], input[type='search']").First;
-    private ILocator EmployeeTable       => Page.Locator("table tbody, [class*='employee-list'], [class*='table']").First;
-    private ILocator SaveButton          => Page.Locator("button[type='submit']:visible, button:has-text('Save'):visible, button:has-text('Add'):visible").Last;
-    private ILocator CancelButton        => Page.Locator("button:has-text('Cancel'), button:has-text('Close')").First;
-    private ILocator SuccessToast        => Page.Locator("[class*='success'], [class*='toast'], [role='alert']").First;
-    private ILocator ErrorToast          => Page.Locator("[class*='error'], [class*='danger'], [role='alert']").First;
+    // Header controls
+    private ILocator AddEmployeeButton => Page.Locator("button:has-text('Add employee')").First;
+    private ILocator SearchInput       => Page.Locator("#employee-search");
+    private ILocator SearchButton      => Page.Locator("button:has-text('Search')").First;
+
+    // Modal form (inside .employee-form)
+    private ILocator EmployeeForm       => Page.Locator(".employee-form");
+    private ILocator EmpNumberInput     => EmployeeForm.Locator("label:has-text('Employee number') input");
+    private ILocator EmailInput         => EmployeeForm.Locator("label:has-text('Email') input");
+    private ILocator FirstNameInput     => EmployeeForm.Locator("label:has-text('First name') input");
+    private ILocator LastNameInput      => EmployeeForm.Locator("label:has-text('Last name') input");
+    private ILocator JobTitleInput      => EmployeeForm.Locator("label:has-text('Job title') input");
+    private ILocator DepartmentInput    => EmployeeForm.Locator("label:has-text('Department') input");
+    private ILocator StatusSelect       => EmployeeForm.Locator("label:has-text('Employment status') select");
+    private ILocator SaveButton         => EmployeeForm.Locator("button:has-text('Save employee')");
+    private ILocator CancelButton       => EmployeeForm.Locator("button:has-text('Cancel')");
+
+    // Page-level error
+    private ILocator ErrorMessage => Page.Locator("[role='alert'], .error-message");
 
     public EmployeePage(IPage page, string baseUrl) : base(page, baseUrl) { }
 
     public async Task NavigateToEmployees()
     {
-        await ClickNavTab("Employees");
-        await Task.Delay(1000);
+        await DismissModalIfOpen();
+        await Page.Locator("nav button:has-text('Employees')").First.ClickAsync();
+        await Page.WaitForSelectorAsync("h1:has-text('Employees')", new PageWaitForSelectorOptions { Timeout = 10000 });
     }
 
     public async Task<bool> IsEmployeePageVisible()
     {
-        await Task.Delay(500);
-        return await Page.Locator("button:has-text('Add Employee'), button:has-text('Add'), [class*='employee']").CountAsync() > 0;
+        try
+        {
+            await Page.WaitForSelectorAsync("h1:has-text('Employees')", new PageWaitForSelectorOptions { Timeout = 5000 });
+            return true;
+        }
+        catch { return false; }
     }
 
     public async Task ClickAddEmployee()
     {
         await AddEmployeeButton.ClickAsync();
-        await Task.Delay(600);
+        await Page.WaitForSelectorAsync(".employee-form", new PageWaitForSelectorOptions { Timeout = 5000 });
     }
 
     public async Task FillEmployeeForm(string empNumber, string firstName, string lastName,
         string email, string jobTitle, string department, string status = "ACTIVE")
     {
-        await FillInputByPlaceholder("employee number", empNumber);
-        await FillInputByPlaceholder("first name", firstName);
-        await FillInputByPlaceholder("last name", lastName);
-        await FillInputByPlaceholder("email", email);
-        await FillInputByPlaceholder("job title", jobTitle);
-        await FillInputByPlaceholder("department", department);
-
-        // Status dropdown
-        var statusSelect = Page.Locator("select[name*='status' i], select[id*='status' i]").First;
-        if (await statusSelect.CountAsync() > 0)
-            await statusSelect.SelectOptionAsync(new SelectOptionValue { Value = status });
+        await EmpNumberInput.ClearAsync();
+        await EmpNumberInput.FillAsync(empNumber);
+        await EmailInput.ClearAsync();
+        await EmailInput.FillAsync(email);
+        await FirstNameInput.ClearAsync();
+        await FirstNameInput.FillAsync(firstName);
+        await LastNameInput.ClearAsync();
+        await LastNameInput.FillAsync(lastName);
+        await JobTitleInput.ClearAsync();
+        await JobTitleInput.FillAsync(jobTitle);
+        await DepartmentInput.ClearAsync();
+        await DepartmentInput.FillAsync(department);
+        await StatusSelect.SelectOptionAsync(new SelectOptionValue { Value = status });
     }
 
     public async Task SubmitEmployeeForm()
     {
         await SaveButton.ClickAsync();
-        await Task.Delay(1500);
+        // Wait for modal to close (success) or error to appear
+        try
+        {
+            await Page.WaitForSelectorAsync(".employee-form",
+                new PageWaitForSelectorOptions { State = WaitForSelectorState.Detached, Timeout = 5000 });
+        }
+        catch { /* form might stay open on validation error */ }
+        await Task.Delay(500);
     }
 
     public async Task<bool> IsEmployeeInList(string name)
     {
         await Task.Delay(500);
-        var content = await Page.ContentAsync();
-        return content.Contains(name, StringComparison.OrdinalIgnoreCase);
+        return await Page.Locator($"table tbody tr td:has-text('{name}')").CountAsync() > 0;
     }
 
     public async Task SearchEmployee(string searchTerm)
     {
-        if (await SearchInput.CountAsync() > 0)
-        {
-            await SearchInput.ClearAsync();
-            await SearchInput.FillAsync(searchTerm);
-            await Task.Delay(800);
-        }
+        await SearchInput.ClearAsync();
+        await SearchInput.FillAsync(searchTerm);
+        await SearchButton.ClickAsync();
+        await Task.Delay(800);
     }
 
     public async Task<int> GetEmployeeCount()
     {
-        await Task.Delay(500);
-        var rows = Page.Locator("table tbody tr, [class*='employee-row'], [class*='list-item']");
-        return await rows.CountAsync();
+        await Task.Delay(300);
+        return await Page.Locator("table tbody tr").CountAsync();
+    }
+
+    public async Task<bool> IsNoResultsMessageVisible()
+    {
+        return await Page.Locator("text=No employees match your search").CountAsync() > 0;
     }
 
     public async Task ClickEditEmployee(string name)
     {
-        var row = Page.Locator($"tr:has-text('{name}'), [class*='row']:has-text('{name}')").First;
-        var editBtn = row.Locator("button:has-text('Edit'), button[title*='edit' i], [class*='edit']").First;
-        if (await editBtn.CountAsync() > 0)
-            await editBtn.ClickAsync();
-        else
-        {
-            // Try clicking the row itself
-            await row.ClickAsync();
-        }
-        await Task.Delay(600);
+        var row = Page.Locator($"table tbody tr:has-text('{name}')").First;
+        await row.Locator("button:has-text('Edit')").First.ClickAsync();
+        await Page.WaitForSelectorAsync(".employee-form", new PageWaitForSelectorOptions { Timeout = 5000 });
     }
 
-    public async Task UpdateEmployeeField(string field, string value)
+    public async Task UpdateJobTitle(string jobTitle)
     {
-        var input = Page.Locator($"input[placeholder*='{field}' i]:visible, input[name*='{field}' i]:visible").First;
-        if (await input.CountAsync() > 0)
-        {
-            await input.ClearAsync();
-            await input.FillAsync(value);
-        }
+        await JobTitleInput.ClearAsync();
+        await JobTitleInput.FillAsync(jobTitle);
     }
 
     public async Task ClickDeleteEmployee(string name)
     {
-        var row = Page.Locator($"tr:has-text('{name}'), [class*='row']:has-text('{name}')").First;
-        var deleteBtn = row.Locator("button:has-text('Delete'), button[title*='delete' i], [class*='delete']").First;
-        if (await deleteBtn.CountAsync() > 0)
-            await deleteBtn.ClickAsync();
-        await Task.Delay(400);
-        // Confirm dialog if present
-        var confirmBtn = Page.Locator("button:has-text('Confirm'), button:has-text('Yes'), button:has-text('Delete'):visible").First;
-        if (await confirmBtn.CountAsync() > 0)
-            await confirmBtn.ClickAsync();
-        await Task.Delay(1000);
+        var row = Page.Locator($"table tbody tr:has-text('{name}')").First;
+        // Handle window.confirm dialog — accept automatically
+        Page.Dialog += async (_, dialog) => await dialog.AcceptAsync();
+        await row.Locator("button:has-text('Delete')").First.ClickAsync();
+        await Task.Delay(1500);
     }
 
-    public async Task<string> GetFormValidationError()
+    public async Task<bool> IsErrorVisible()
     {
-        var err = Page.Locator("[class*='error']:visible, [class*='invalid']:visible, .validation-error:visible").First;
-        if (await err.CountAsync() > 0)
-            return await err.InnerTextAsync();
-        return string.Empty;
+        return await ErrorMessage.CountAsync() > 0;
     }
 }

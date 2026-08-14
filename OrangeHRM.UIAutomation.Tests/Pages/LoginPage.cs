@@ -3,24 +3,25 @@ using Microsoft.Playwright;
 namespace OrangeHRM.UIAutomation.Tests.Pages;
 
 /// <summary>
-/// POM for the Login page.
-/// US: Authentication — login with valid/invalid credentials.
+/// POM for the PeopleFlow Login page (SPA — URL never changes after login).
+/// The app renders .login-layout before login and .app-shell after login.
 /// </summary>
 public class LoginPage : BasePage
 {
-    // Locators
-    private ILocator UsernameInput => Page.Locator("input[type='text'], input[placeholder*='username' i], input[name*='username' i]").First;
-    private ILocator PasswordInput => Page.Locator("input[type='password']").First;
-    private ILocator LoginButton   => Page.Locator("button[type='submit'], button:has-text('Login'), button:has-text('Sign In')").First;
-    private ILocator ErrorMessage  => Page.Locator("[class*='error'], [class*='alert'], [role='alert']").First;
-    private ILocator WelcomeText   => Page.Locator("h1, h2, [class*='dashboard'], [class*='welcome']").First;
+    // Exact IDs from the Vue template
+    private ILocator UsernameInput => Page.Locator("#username");
+    private ILocator PasswordInput => Page.Locator("#password");
+    private ILocator LoginButton   => Page.Locator("button[type='submit']");
+    private ILocator ErrorMessage  => Page.Locator("[role='alert'], .error-message");
+    // The app-shell div is only present when logged in
+    private ILocator AppShell      => Page.Locator(".app-shell");
 
     public LoginPage(IPage page, string baseUrl) : base(page, baseUrl) { }
 
     public async Task NavigateToLogin()
     {
         await NavigateTo();
-        await Page.WaitForSelectorAsync("input[type='password']", new PageWaitForSelectorOptions { Timeout = 15000 });
+        await Page.WaitForSelectorAsync(".login-layout", new PageWaitForSelectorOptions { Timeout = 15000 });
     }
 
     public async Task Login(string username, string password)
@@ -30,14 +31,20 @@ public class LoginPage : BasePage
         await PasswordInput.ClearAsync();
         await PasswordInput.FillAsync(password);
         await LoginButton.ClickAsync();
-        await Task.Delay(1500);
+        // Wait for either app-shell (success) or error (failure) — max 5s
+        try
+        {
+            await Page.WaitForSelectorAsync(".app-shell, [role='alert'], .error-message",
+                new PageWaitForSelectorOptions { Timeout = 5000 });
+        }
+        catch { /* timeout — let caller assert */ }
     }
 
     public async Task<bool> IsLoginPageVisible()
     {
         try
         {
-            await Page.WaitForSelectorAsync("input[type='password']", new PageWaitForSelectorOptions { Timeout = 5000 });
+            await Page.WaitForSelectorAsync(".login-layout", new PageWaitForSelectorOptions { Timeout = 5000 });
             return true;
         }
         catch { return false; }
@@ -45,22 +52,22 @@ public class LoginPage : BasePage
 
     public async Task<bool> IsLoggedIn()
     {
-        await Task.Delay(1000);
-        // Check URL changed or dashboard element visible
-        var url = Page.Url;
-        if (url.Contains("dashboard") || url.Contains("home")) return true;
-
-        var nav = Page.Locator("nav button, [class*='nav']");
-        return await nav.CountAsync() > 0;
+        // SPA: URL does not change; app-shell div appears after successful login
+        try
+        {
+            await Page.WaitForSelectorAsync(".app-shell", new PageWaitForSelectorOptions { Timeout = 5000 });
+            return true;
+        }
+        catch { return false; }
     }
 
     public async Task<string> GetErrorMessage()
     {
         try
         {
-            await Page.WaitForSelectorAsync("[class*='error'], [class*='alert'], [role='alert']",
+            await Page.WaitForSelectorAsync("[role='alert'], .error-message",
                 new PageWaitForSelectorOptions { Timeout = 5000 });
-            return await ErrorMessage.InnerTextAsync();
+            return await ErrorMessage.First.InnerTextAsync();
         }
         catch { return string.Empty; }
     }
@@ -69,8 +76,9 @@ public class LoginPage : BasePage
     {
         try
         {
-            await Page.Locator("button:has-text('Logout'), a:has-text('Logout'), [class*='logout']").First.ClickAsync();
-            await Task.Delay(1000);
+            // The app uses "Sign out" text on a secondary-button
+            await Page.Locator("button:has-text('Sign out')").First.ClickAsync();
+            await Page.WaitForSelectorAsync(".login-layout", new PageWaitForSelectorOptions { Timeout = 5000 });
         }
         catch { await NavigateTo(); }
     }

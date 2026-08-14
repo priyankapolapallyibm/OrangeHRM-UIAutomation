@@ -147,9 +147,6 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Recruitment
 #line 7
   this.FeatureBackground();
 #line hidden
-#line 17
-    testRunner.When("I click Add Vacancy", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
-#line hidden
                 TechTalk.SpecFlow.Table table9 = new TechTalk.SpecFlow.Table(new string[] {
                             "Field",
                             "Value"});
@@ -165,13 +162,13 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Recruitment
                 table9.AddRow(new string[] {
                             "Positions",
                             "2"});
-#line 18
-    testRunner.And("I fill the vacancy form with:", ((string)(null)), table9, "And ");
+#line 17
+    testRunner.When("I fill the vacancy form with:", ((string)(null)), table9, "When ");
 #line hidden
-#line 24
+#line 23
     testRunner.And("I submit the vacancy form", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 25
+#line 24
     testRunner.Then("the vacancy \"BDD Senior QA Engineer\" should appear in the list with status \"OPEN\"" +
                         "", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
@@ -190,7 +187,7 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Recruitment
                     "Validation"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Create vacancy fails when title is missing", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 28
+#line 27
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -203,13 +200,10 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Recruitment
 #line 7
   this.FeatureBackground();
 #line hidden
+#line 28
+    testRunner.When("I submit the vacancy form without filling required fields", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
+#line hidden
 #line 29
-    testRunner.When("I click Add Vacancy", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
-#line hidden
-#line 30
-    testRunner.And("I submit the vacancy form without filling required fields", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
-#line hidden
-#line 31
     testRunner.Then("I should see a validation error for the form", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -227,7 +221,7 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Recruitment
                     "Smoke"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Successfully add a candidate to a vacancy", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 34
+#line 32
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -240,11 +234,8 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Recruitment
 #line 7
   this.FeatureBackground();
 #line hidden
-#line 35
+#line 33
     testRunner.Given("a vacancy \"BDD Senior QA Engineer\" exists and is open", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
-#line hidden
-#line 36
-    testRunner.When("I click Add Candidate", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
                 TechTalk.SpecFlow.Table table10 = new TechTalk.SpecFlow.Table(new string[] {
                             "Field",
@@ -261,13 +252,13 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Recruitment
                 table10.AddRow(new string[] {
                             "Phone",
                             "+91-9012345678"});
-#line 37
+#line 34
     testRunner.And("I fill the candidate form with:", ((string)(null)), table10, "And ");
 #line hidden
-#line 43
+#line 40
     testRunner.And("I submit the candidate form", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 44
+#line 41
     testRunner.Then("candidate \"Deepa Nair\" should appear with status \"APPLIED\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -293,7 +284,7 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Recruitment
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             argumentsOfScenario.Add("Status", status);
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Advance candidate through hiring pipeline stages", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 47
+#line 44
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -306,13 +297,13 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Recruitment
 #line 7
   this.FeatureBackground();
 #line hidden
-#line 48
+#line 45
     testRunner.Given("candidate \"Deepa Nair\" is in the recruitment pipeline", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 49
+#line 46
     testRunner.When(string.Format("I advance candidate \"Deepa Nair\" to status \"{0}\"", status), ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 50
+#line 47
     testRunner.Then(string.Format("candidate \"Deepa Nair\" should show status \"{0}\"", status), ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -328,7 +319,7 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Recruitment
                     "CloseVacancy"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Close a filled vacancy", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 60
+#line 57
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -341,13 +332,13 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Recruitment
 #line 7
   this.FeatureBackground();
 #line hidden
-#line 61
+#line 58
     testRunner.Given("vacancy \"BDD Senior QA Engineer\" has been filled", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 62
+#line 59
     testRunner.When("I close the vacancy \"BDD Senior QA Engineer\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 63
+#line 60
     testRunner.Then("the vacancy \"BDD Senior QA Engineer\" should show status \"CLOSED\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }

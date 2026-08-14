@@ -157,9 +157,6 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Leave
                             "Field",
                             "Value"});
                 table6.AddRow(new string[] {
-                            "EmployeeId",
-                            "1"});
-                table6.AddRow(new string[] {
                             "LeaveType",
                             "ANNUAL"});
                 table6.AddRow(new string[] {
@@ -174,10 +171,10 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Leave
 #line 19
     testRunner.And("I fill the leave form with:", ((string)(null)), table6, "And ");
 #line hidden
-#line 26
+#line 25
     testRunner.And("I submit the leave form", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 27
+#line 26
     testRunner.Then("the leave request should appear in the list with status \"PENDING\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -195,7 +192,7 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Leave
                     "Validation"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Leave request fails when end date is before start date", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 30
+#line 29
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -208,15 +205,12 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Leave
 #line 7
   this.FeatureBackground();
 #line hidden
-#line 31
+#line 30
     testRunner.When("I click New Leave Request", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
                 TechTalk.SpecFlow.Table table7 = new TechTalk.SpecFlow.Table(new string[] {
                             "Field",
                             "Value"});
-                table7.AddRow(new string[] {
-                            "EmployeeId",
-                            "1"});
                 table7.AddRow(new string[] {
                             "LeaveType",
                             "SICK"});
@@ -229,13 +223,13 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Leave
                 table7.AddRow(new string[] {
                             "Reason",
                             "Invalid date range test"});
-#line 32
+#line 31
     testRunner.And("I fill the leave form with:", ((string)(null)), table7, "And ");
 #line hidden
-#line 39
+#line 37
     testRunner.And("I submit the leave form", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 40
+#line 38
     testRunner.Then("I should see a date validation error", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -253,7 +247,7 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Leave
                     "Overlap"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Leave request rejected when dates overlap existing approved leave", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 43
+#line 41
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -266,18 +260,15 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Leave
 #line 7
   this.FeatureBackground();
 #line hidden
-#line 44
-    testRunner.Given("an approved leave exists for employee 1 from \"2036-01-10\" to \"2036-01-12\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
+#line 42
+    testRunner.Given("a pending leave request exists in the list", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 45
+#line 43
     testRunner.When("I click New Leave Request", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
                 TechTalk.SpecFlow.Table table8 = new TechTalk.SpecFlow.Table(new string[] {
                             "Field",
                             "Value"});
-                table8.AddRow(new string[] {
-                            "EmployeeId",
-                            "1"});
                 table8.AddRow(new string[] {
                             "LeaveType",
                             "PERSONAL"});
@@ -290,13 +281,13 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Leave
                 table8.AddRow(new string[] {
                             "Reason",
                             "Overlap test"});
-#line 46
+#line 44
     testRunner.And("I fill the leave form with:", ((string)(null)), table8, "And ");
 #line hidden
-#line 53
+#line 50
     testRunner.And("I submit the leave form", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 54
+#line 51
     testRunner.Then("I should see an overlap conflict error", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -312,7 +303,7 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Leave
                     "ApproveLeave"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Manager approves a pending leave request", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 57
+#line 54
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -325,13 +316,13 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Leave
 #line 7
   this.FeatureBackground();
 #line hidden
-#line 58
+#line 55
     testRunner.Given("a pending leave request exists in the list", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 59
+#line 56
     testRunner.When("I approve the leave request", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 60
+#line 57
     testRunner.Then("the leave status should change to \"APPROVED\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }

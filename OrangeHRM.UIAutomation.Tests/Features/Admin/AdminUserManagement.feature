@@ -16,8 +16,7 @@ Feature: Admin User Management
 
   @CreateUser @Smoke
   Scenario: Successfully create a new employee user account
-    When I click Add User
-    And I fill the user form with:
+    When I fill the user form with:
       | Field       | Value                    |
       | Username    | bdd.test.user.auto       |
       | Password    | Welcome@BDD123           |
@@ -28,8 +27,7 @@ Feature: Admin User Management
 
   @CreateUser @Validation
   Scenario: Create user fails when password is too short
-    When I click Add User
-    And I fill the user form with:
+    When I fill the user form with:
       | Field       | Value        |
       | Username    | short.pw.bdd |
       | Password    | short        |
@@ -41,8 +39,7 @@ Feature: Admin User Management
   @CreateUser @Duplicate
   Scenario: Create user fails with duplicate username
     Given user "bdd.test.user.auto" already exists
-    When I click Add User
-    And I fill the user form with:
+    When I fill the user form with:
       | Field       | Value              |
       | Username    | bdd.test.user.auto |
       | Password    | Welcome@BDD123     |
@@ -55,7 +52,7 @@ Feature: Admin User Management
   Scenario: Disable a user account
     Given user "bdd.test.user.auto" is active in the system
     When I disable user "bdd.test.user.auto"
-    Then user "bdd.test.user.auto" should show status "Inactive"
+    Then user "bdd.test.user.auto" should show status "DISABLED"
 
   @SelfProtection
   Scenario: Admin cannot deactivate their own account

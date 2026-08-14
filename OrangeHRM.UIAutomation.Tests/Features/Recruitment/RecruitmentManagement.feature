@@ -14,8 +14,7 @@ Feature: Recruitment Management
 
   @AddVacancy @Smoke
   Scenario: Successfully create a new job vacancy
-    When I click Add Vacancy
-    And I fill the vacancy form with:
+    When I fill the vacancy form with:
       | Field       | Value                      |
       | Title       | BDD Senior QA Engineer     |
       | Department  | Quality Assurance          |
@@ -26,14 +25,12 @@ Feature: Recruitment Management
 
   @AddVacancy @Validation
   Scenario: Create vacancy fails when title is missing
-    When I click Add Vacancy
-    And I submit the vacancy form without filling required fields
+    When I submit the vacancy form without filling required fields
     Then I should see a validation error for the form
 
   @AddCandidate @Smoke
   Scenario: Successfully add a candidate to a vacancy
     Given a vacancy "BDD Senior QA Engineer" exists and is open
-    When I click Add Candidate
     And I fill the candidate form with:
       | Field     | Value                         |
       | FirstName | Deepa                         |

@@ -46,12 +46,6 @@ public class AdminManagementSteps
             "passwordHash field should not be visible in the UI");
     }
 
-    [When(@"I click Add User")]
-    public async Task WhenIClickAddUser()
-    {
-        await _adminPage.ClickAddUser();
-    }
-
     [When(@"I fill the user form with:")]
     public async Task WhenIFillTheUserFormWith(Table table)
     {
@@ -122,13 +116,15 @@ public class AdminManagementSteps
     [When(@"I attempt to disable my own account")]
     public async Task WhenIAttemptToDisableMyOwnAccount()
     {
-        await _adminPage.DisableUser("Admin");
+        // In the app the Disable button is :disabled for the current user — just verify that
+        await Task.CompletedTask;
     }
 
     [Then(@"I should see an error preventing self-deactivation")]
     public async Task ThenIShouldSeeAnErrorPreventingSelfDeactivation()
     {
-        var errorShown = await _adminPage.IsErrorDisplayed("cannot") || await _adminPage.IsErrorDisplayed("own") || await _adminPage.IsErrorDisplayed("self");
-        Assert.That(errorShown, Is.True, "Expected self-deactivation protection error");
+        // The app prevents self-deactivation by disabling the button (not showing an error message)
+        var selfDisabled = await _adminPage.IsSelfDisableButtonDisabled("Admin");
+        Assert.That(selfDisabled, Is.True, "Expected self-deactivation to be prevented (button should be disabled for own account)");
     }
 }

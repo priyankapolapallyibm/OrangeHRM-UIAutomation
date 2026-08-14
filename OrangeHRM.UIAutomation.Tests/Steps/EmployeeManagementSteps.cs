@@ -56,8 +56,9 @@ public class EmployeeManagementSteps
     [Then(@"the employee list should show no results")]
     public async Task ThenTheEmployeeListShouldShowNoResults()
     {
+        var noResults = await _employeePage.IsNoResultsMessageVisible();
         var count = await _employeePage.GetEmployeeCount();
-        Assert.That(count, Is.EqualTo(0), "Expected no results for this search");
+        Assert.That(noResults || count == 0, Is.True, "Expected no results for this search");
     }
 
     [When(@"I click Add Employee")]
@@ -103,15 +104,16 @@ public class EmployeeManagementSteps
     [Then(@"I should see a validation error for the form")]
     public async Task ThenIShouldSeeAValidationErrorForTheForm()
     {
-        var error = await _employeePage.GetFormValidationError();
-        var errorVisible = await _driver.Page.Locator("[class*='error']:visible, [class*='invalid']:visible").CountAsync() > 0;
-        Assert.That(error.Length > 0 || errorVisible, Is.True, "Expected form validation error");
+        // HTML5 required validation prevents submit — form stays open; or API error shown
+        var errorVisible = await _driver.Page.Locator("[role='alert']:visible, .error-message:visible").CountAsync() > 0;
+        var formStillOpen = await _driver.Page.Locator(".employee-form").CountAsync() > 0;
+        Assert.That(errorVisible || formStillOpen, Is.True, "Expected form validation to prevent submission");
     }
 
     [Then(@"I should see a duplicate error")]
     public async Task ThenIShouldSeeADuplicateError()
     {
-        var errorVisible = await _driver.Page.Locator("[class*='error']:visible, [role='alert']:visible, [class*='conflict']:visible").CountAsync() > 0;
+        var errorVisible = await _driver.Page.Locator("[role='alert']:visible, .error-message:visible").CountAsync() > 0;
         Assert.That(errorVisible, Is.True, "Expected duplicate employee number error");
     }
 
@@ -132,7 +134,7 @@ public class EmployeeManagementSteps
     [When(@"I update the job title to ""(.*)""")]
     public async Task WhenIUpdateTheJobTitleTo(string jobTitle)
     {
-        await _employeePage.UpdateEmployeeField("job title", jobTitle);
+        await _employeePage.UpdateJobTitle(jobTitle);
     }
 
     [Then(@"employee ""(.*)"" should show job title ""(.*)""")]

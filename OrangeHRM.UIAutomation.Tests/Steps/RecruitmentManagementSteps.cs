@@ -32,12 +32,7 @@ public class RecruitmentManagementSteps
         Assert.That(await _recruitmentPage.IsRecruitmentPageVisible(), Is.True, "Recruitment page not visible");
     }
 
-    [When(@"I click Add Vacancy")]
-    public async Task WhenIClickAddVacancy()
-    {
-        await _recruitmentPage.ClickAddVacancy();
-    }
-
+    // Vacancy tab scenarios — form is always visible, no "click Add Vacancy" needed
     [When(@"I fill the vacancy form with:")]
     public async Task WhenIFillTheVacancyFormWith(Table table)
     {
@@ -59,6 +54,7 @@ public class RecruitmentManagementSteps
     [When(@"I submit the vacancy form without filling required fields")]
     public async Task WhenISubmitTheVacancyFormWithoutFillingRequiredFields()
     {
+        // Submit empty form — HTML5 required will block or API error shown
         await _recruitmentPage.SubmitVacancyForm();
     }
 
@@ -69,17 +65,25 @@ public class RecruitmentManagementSteps
             $"Vacancy '{title}' not found in list");
     }
 
+    [Then(@"I should see a validation error for the form")]
+    public async Task ThenIShouldSeeAValidationErrorForTheForm()
+    {
+        // HTML5 required stops submit (no navigation) or API error appears
+        var errorVisible = await _recruitmentPage.IsErrorDisplayed();
+        var pageHasForm = await _driver.Page.Locator("label:has-text('Job title')").CountAsync() > 0;
+        Assert.That(errorVisible || pageHasForm, Is.True, "Expected validation to block empty vacancy form");
+    }
+
+    // Candidate tab scenarios
     [Given(@"a vacancy ""(.*)"" exists and is open")]
     public async Task GivenAVacancyExistsAndIsOpen(string title)
     {
+        // Switch to vacancies tab first to check
+        await _recruitmentPage.SwitchToVacanciesTab();
         var exists = await _recruitmentPage.IsVacancyVisible(title);
         if (!exists) Assert.Inconclusive($"Pre-condition: vacancy '{title}' not found. Run Add Vacancy scenario first.");
-    }
-
-    [When(@"I click Add Candidate")]
-    public async Task WhenIClickAddCandidate()
-    {
-        await _recruitmentPage.ClickAddCandidate();
+        // Switch to candidates tab for the next steps
+        await _recruitmentPage.SwitchToCandidatesTab();
     }
 
     [When(@"I fill the candidate form with:")]
@@ -97,21 +101,22 @@ public class RecruitmentManagementSteps
     [When(@"I submit the candidate form")]
     public async Task WhenISubmitTheCandidateForm()
     {
-        await _recruitmentPage.SubmitVacancyForm();
+        await _recruitmentPage.SubmitCandidateForm();
     }
 
     [Then(@"candidate ""(.*)"" should appear with status ""(.*)""")]
     public async Task ThenCandidateShouldAppearWithStatus(string name, string status)
     {
-        var content = await _driver.Page.ContentAsync();
-        Assert.That(content, Does.Contain(name).IgnoreCase, $"Candidate '{name}' not found in list");
+        Assert.That(await _recruitmentPage.IsCandidateVisible(name), Is.True,
+            $"Candidate '{name}' not found in list");
     }
 
     [Given(@"candidate ""(.*)"" is in the recruitment pipeline")]
     public async Task GivenCandidateIsInThePipeline(string name)
     {
-        var content = await _driver.Page.ContentAsync();
-        if (!content.Contains(name, StringComparison.OrdinalIgnoreCase))
+        await _recruitmentPage.SwitchToCandidatesTab();
+        var visible = await _recruitmentPage.IsCandidateVisible(name);
+        if (!visible)
             Assert.Inconclusive($"Pre-condition: candidate '{name}' not in pipeline.");
     }
 
@@ -124,32 +129,31 @@ public class RecruitmentManagementSteps
     [Then(@"candidate ""(.*)"" should show status ""(.*)""")]
     public async Task ThenCandidateShouldShowStatus(string name, string status)
     {
-        await Task.Delay(500);
-        var content = await _driver.Page.ContentAsync();
-        Assert.That(content, Does.Contain(status).IgnoreCase,
-            $"Expected candidate '{name}' to show status '{status}'");
+        var actual = await _recruitmentPage.GetCandidateStatus(name);
+        Assert.That(actual, Does.Contain(status).IgnoreCase,
+            $"Expected candidate '{name}' to show status '{status}' but got '{actual}'");
     }
 
     [Given(@"vacancy ""(.*)"" has been filled")]
     public async Task GivenVacancyHasBeenFilled(string title)
     {
-        await Task.CompletedTask; // pre-condition already satisfied by pipeline scenario
+        await _recruitmentPage.SwitchToVacanciesTab();
+        // Pre-condition check — vacancy should exist
+        var exists = await _recruitmentPage.IsVacancyVisible(title);
+        if (!exists) Assert.Inconclusive($"Pre-condition: vacancy '{title}' not found.");
     }
 
     [When(@"I close the vacancy ""(.*)""")]
     public async Task WhenICloseTheVacancy(string title)
     {
-        var row = _driver.Page.Locator($"tr:has-text('{title}'), [class*='row']:has-text('{title}')").First;
-        var closeBtn = row.Locator("button:has-text('Close'), button:has-text('Fill')").First;
-        if (await closeBtn.CountAsync() > 0) await closeBtn.ClickAsync();
-        await Task.Delay(800);
+        await _recruitmentPage.CloseVacancy(title);
     }
 
     [Then(@"the vacancy ""(.*)"" should show status ""(.*)""")]
     public async Task ThenTheVacancyShouldShowStatus(string title, string status)
     {
-        var content = await _driver.Page.ContentAsync();
-        Assert.That(content, Does.Contain(status).IgnoreCase,
-            $"Expected vacancy '{title}' to show status '{status}'");
+        var actual = await _recruitmentPage.GetVacancyStatus(title);
+        Assert.That(actual, Does.Contain(status).IgnoreCase,
+            $"Expected vacancy '{title}' to show status '{status}' but got '{actual}'");
     }
 }

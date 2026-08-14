@@ -3,106 +3,119 @@ using Microsoft.Playwright;
 namespace OrangeHRM.UIAutomation.Tests.Pages;
 
 /// <summary>
-/// POM for Leave Management page.
-/// US: Submit Leave Request, View Leave List, Approve/Reject Leave.
+/// POM for Leave Management page (.module-page, h1 "Leave Management").
+/// Form opens inline via "New request" button toggle.
+/// Labels: Employee (select), Leave type (select), Start date (date), End date (date), Reason (textarea).
 /// </summary>
 public class LeavePage : BasePage
 {
-    private ILocator NewLeaveButton  => Page.Locator("button:has-text('New'), button:has-text('Request'), button:has-text('Add')").First;
-    private ILocator LeaveTypeSelect => Page.Locator("select[name*='leaveType' i], select[id*='type' i], select").First;
-    private ILocator StartDateInput  => Page.Locator("input[name*='start' i], input[placeholder*='start' i], input[type='date']").First;
-    private ILocator EndDateInput    => Page.Locator("input[name*='end' i], input[placeholder*='end' i], input[type='date']").Last;
-    private ILocator ReasonInput     => Page.Locator("textarea, input[name*='reason' i], input[placeholder*='reason' i]").First;
-    private ILocator SubmitButton    => Page.Locator("button[type='submit']:visible, button:has-text('Submit'):visible, button:has-text('Save'):visible").Last;
+    private ILocator NewRequestButton => Page.Locator("button:has-text('New request'), button:has-text('Close form')").First;
+    private ILocator EmployeeSelect   => Page.Locator("label:has-text('Employee') select").First;
+    private ILocator LeaveTypeSelect  => Page.Locator("label:has-text('Leave type') select").First;
+    private ILocator StartDateInput   => Page.Locator("label:has-text('Start date') input[type='date']").First;
+    private ILocator EndDateInput     => Page.Locator("label:has-text('End date') input[type='date']").First;
+    private ILocator ReasonInput      => Page.Locator("label:has-text('Reason') textarea").First;
+    private ILocator SubmitButton     => Page.Locator("button:has-text('Submit request')").First;
+    private ILocator ErrorAlert       => Page.Locator("[role='alert'], .error-message");
 
     public LeavePage(IPage page, string baseUrl) : base(page, baseUrl) { }
 
     public async Task NavigateToLeave()
     {
-        await ClickNavTab("Leave");
-        await Task.Delay(1000);
+        await DismissModalIfOpen();
+        await Page.Locator("nav button:has-text('Leave')").First.ClickAsync();
+        await Page.WaitForSelectorAsync("h1:has-text('Leave Management')", new PageWaitForSelectorOptions { Timeout = 10000 });
     }
 
     public async Task<bool> IsLeavePageVisible()
     {
-        await Task.Delay(500);
-        return await Page.Locator("[class*='leave'], button:has-text('New'), button:has-text('Request')").CountAsync() > 0;
+        try
+        {
+            await Page.WaitForSelectorAsync("h1:has-text('Leave Management')", new PageWaitForSelectorOptions { Timeout = 5000 });
+            return true;
+        }
+        catch { return false; }
     }
 
     public async Task ClickNewLeaveRequest()
     {
-        await NewLeaveButton.ClickAsync();
-        await Task.Delay(600);
+        await NewRequestButton.ClickAsync();
+        // Wait for form to appear
+        await Page.WaitForSelectorAsync("label:has-text('Start date')", new PageWaitForSelectorOptions { Timeout = 5000 });
     }
 
-    public async Task FillLeaveForm(int employeeId, string leaveType, string startDate, string endDate, string reason)
+    public async Task FillLeaveForm(string leaveType, string startDate, string endDate, string reason)
     {
-        // Employee ID
-        var empInput = Page.Locator("input[placeholder*='employee' i], input[name*='employee' i], input[type='number']").First;
-        if (await empInput.CountAsync() > 0)
-        {
-            await empInput.ClearAsync();
-            await empInput.FillAsync(employeeId.ToString());
-        }
+        // Select leave type
+        await LeaveTypeSelect.SelectOptionAsync(new SelectOptionValue { Value = leaveType });
 
-        // Leave type
-        if (await LeaveTypeSelect.CountAsync() > 0)
-            await LeaveTypeSelect.SelectOptionAsync(new SelectOptionValue { Value = leaveType });
-
-        // Dates
+        // Fill dates — clear then type the value
         await StartDateInput.FillAsync(startDate);
         await EndDateInput.FillAsync(endDate);
 
-        // Reason
-        if (await ReasonInput.CountAsync() > 0)
-        {
-            await ReasonInput.ClearAsync();
-            await ReasonInput.FillAsync(reason);
-        }
+        // Fill reason
+        await ReasonInput.ClearAsync();
+        await ReasonInput.FillAsync(reason);
     }
 
     public async Task SubmitLeaveForm()
     {
         await SubmitButton.ClickAsync();
-        await Task.Delay(1500);
+        // Wait for form to close (success) or error to appear
+        try
+        {
+            await Page.WaitForSelectorAsync("label:has-text('Start date')",
+                new PageWaitForSelectorOptions { State = WaitForSelectorState.Detached, Timeout = 5000 });
+        }
+        catch { /* might stay open on error */ }
+        await Task.Delay(500);
     }
 
     public async Task<bool> IsLeaveRequestVisible(string leaveType)
     {
         await Task.Delay(500);
-        return await Page.Locator($"text={leaveType}").CountAsync() > 0;
+        return await Page.Locator($"table tbody tr td:has-text('{leaveType}')").CountAsync() > 0;
     }
 
-    public async Task<string> GetLeaveStatus(string leaveType)
+    public async Task<string> GetLeaveStatus(string searchText)
     {
-        var row = Page.Locator($"tr:has-text('{leaveType}'), [class*='row']:has-text('{leaveType}')").First;
+        // Find row containing the search text, return .record-status text
+        var row = Page.Locator($"table tbody tr:has-text('{searchText}')").First;
         if (await row.CountAsync() > 0)
         {
-            var statusBadge = row.Locator("[class*='badge'], [class*='status'], td").Last;
-            return await statusBadge.InnerTextAsync();
+            var badge = row.Locator(".record-status").First;
+            if (await badge.CountAsync() > 0)
+                return await badge.InnerTextAsync();
         }
         return string.Empty;
     }
 
-    public async Task ApproveLeaveRequest(string leaveType)
+    public async Task ApproveLeaveRequest(string searchText)
     {
-        var row = Page.Locator($"tr:has-text('{leaveType}'), [class*='row']:has-text('{leaveType}')").First;
-        var approveBtn = row.Locator("button:has-text('Approve'), [class*='approve']").First;
-        if (await approveBtn.CountAsync() > 0)
-            await approveBtn.ClickAsync();
+        var row = Page.Locator($"table tbody tr:has-text('{searchText}')").First;
+        if (await row.CountAsync() > 0)
+        {
+            var approveBtn = row.Locator("button:has-text('Approve')").First;
+            if (await approveBtn.CountAsync() > 0)
+                await approveBtn.ClickAsync();
+        }
         await Task.Delay(1000);
     }
 
-    public async Task<bool> IsOverlapErrorDisplayed()
+    public async Task<bool> HasPendingLeaveRequest()
     {
-        var err = Page.Locator("[class*='error']:visible, [role='alert']:visible");
-        if (await err.CountAsync() > 0)
-        {
-            var text = await err.First.InnerTextAsync();
-            return text.Contains("overlap", StringComparison.OrdinalIgnoreCase)
-                || text.Contains("conflict", StringComparison.OrdinalIgnoreCase)
-                || text.Contains("existing", StringComparison.OrdinalIgnoreCase);
-        }
-        return false;
+        return await Page.Locator("table tbody tr .record-status:has-text('PENDING')").CountAsync() > 0;
+    }
+
+    public async Task<bool> IsErrorDisplayed()
+    {
+        return await ErrorAlert.CountAsync() > 0;
+    }
+
+    public async Task<string> GetErrorText()
+    {
+        if (await ErrorAlert.CountAsync() > 0)
+            return await ErrorAlert.First.InnerTextAsync();
+        return string.Empty;
     }
 }

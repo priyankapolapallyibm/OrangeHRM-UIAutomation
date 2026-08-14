@@ -153,9 +153,6 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Admin
 #line 7
   this.FeatureBackground();
 #line hidden
-#line 19
-    testRunner.When("I click Add User", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
-#line hidden
                 TechTalk.SpecFlow.Table table1 = new TechTalk.SpecFlow.Table(new string[] {
                             "Field",
                             "Value"});
@@ -171,13 +168,13 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Admin
                 table1.AddRow(new string[] {
                             "Role",
                             "EMPLOYEE"});
-#line 20
-    testRunner.And("I fill the user form with:", ((string)(null)), table1, "And ");
+#line 19
+    testRunner.When("I fill the user form with:", ((string)(null)), table1, "When ");
 #line hidden
-#line 26
+#line 25
     testRunner.And("I submit the user form", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 27
+#line 26
     testRunner.Then("user \"bdd.test.user.auto\" should appear in the user list", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -195,7 +192,7 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Admin
                     "Validation"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Create user fails when password is too short", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 30
+#line 29
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -207,9 +204,6 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Admin
                 this.ScenarioStart();
 #line 7
   this.FeatureBackground();
-#line hidden
-#line 31
-    testRunner.When("I click Add User", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
                 TechTalk.SpecFlow.Table table2 = new TechTalk.SpecFlow.Table(new string[] {
                             "Field",
@@ -226,13 +220,13 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Admin
                 table2.AddRow(new string[] {
                             "Role",
                             "EMPLOYEE"});
-#line 32
-    testRunner.And("I fill the user form with:", ((string)(null)), table2, "And ");
+#line 30
+    testRunner.When("I fill the user form with:", ((string)(null)), table2, "When ");
 #line hidden
-#line 38
+#line 36
     testRunner.And("I submit the user form", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 39
+#line 37
     testRunner.Then("I should see a password validation error", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -250,7 +244,7 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Admin
                     "Duplicate"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Create user fails with duplicate username", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 42
+#line 40
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -263,11 +257,8 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Admin
 #line 7
   this.FeatureBackground();
 #line hidden
-#line 43
+#line 41
     testRunner.Given("user \"bdd.test.user.auto\" already exists", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
-#line hidden
-#line 44
-    testRunner.When("I click Add User", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
                 TechTalk.SpecFlow.Table table3 = new TechTalk.SpecFlow.Table(new string[] {
                             "Field",
@@ -284,13 +275,13 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Admin
                 table3.AddRow(new string[] {
                             "Role",
                             "EMPLOYEE"});
-#line 45
-    testRunner.And("I fill the user form with:", ((string)(null)), table3, "And ");
+#line 42
+    testRunner.When("I fill the user form with:", ((string)(null)), table3, "When ");
 #line hidden
-#line 51
+#line 48
     testRunner.And("I submit the user form", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "And ");
 #line hidden
-#line 52
+#line 49
     testRunner.Then("I should see a duplicate username error", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
@@ -306,7 +297,7 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Admin
                     "DisableUser"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Disable a user account", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 55
+#line 52
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -319,14 +310,14 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Admin
 #line 7
   this.FeatureBackground();
 #line hidden
-#line 56
+#line 53
     testRunner.Given("user \"bdd.test.user.auto\" is active in the system", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Given ");
 #line hidden
-#line 57
+#line 54
     testRunner.When("I disable user \"bdd.test.user.auto\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 58
-    testRunner.Then("user \"bdd.test.user.auto\" should show status \"Inactive\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+#line 55
+    testRunner.Then("user \"bdd.test.user.auto\" should show status \"DISABLED\"", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
             this.ScenarioCleanup();
@@ -341,7 +332,7 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Admin
                     "SelfProtection"};
             System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new System.Collections.Specialized.OrderedDictionary();
             TechTalk.SpecFlow.ScenarioInfo scenarioInfo = new TechTalk.SpecFlow.ScenarioInfo("Admin cannot deactivate their own account", null, tagsOfScenario, argumentsOfScenario, featureTags);
-#line 61
+#line 58
   this.ScenarioInitialize(scenarioInfo);
 #line hidden
             if ((TagHelper.ContainsIgnoreTag(tagsOfScenario) || TagHelper.ContainsIgnoreTag(featureTags)))
@@ -354,10 +345,10 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Admin
 #line 7
   this.FeatureBackground();
 #line hidden
-#line 62
+#line 59
     testRunner.When("I attempt to disable my own account", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
-#line 63
+#line 60
     testRunner.Then("I should see an error preventing self-deactivation", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }

@@ -18,7 +18,6 @@ Feature: Leave Management
     When I click New Leave Request
     And I fill the leave form with:
       | Field      | Value       |
-      | EmployeeId | 1           |
       | LeaveType  | ANNUAL      |
       | StartDate  | 2036-01-10  |
       | EndDate    | 2036-01-12  |
@@ -31,7 +30,6 @@ Feature: Leave Management
     When I click New Leave Request
     And I fill the leave form with:
       | Field      | Value       |
-      | EmployeeId | 1           |
       | LeaveType  | SICK        |
       | StartDate  | 2036-02-15  |
       | EndDate    | 2036-02-10  |
@@ -41,11 +39,10 @@ Feature: Leave Management
 
   @SubmitLeave @Overlap
   Scenario: Leave request rejected when dates overlap existing approved leave
-    Given an approved leave exists for employee 1 from "2036-01-10" to "2036-01-12"
+    Given a pending leave request exists in the list
     When I click New Leave Request
     And I fill the leave form with:
       | Field      | Value       |
-      | EmployeeId | 1           |
       | LeaveType  | PERSONAL    |
       | StartDate  | 2036-01-11  |
       | EndDate    | 2036-01-13  |

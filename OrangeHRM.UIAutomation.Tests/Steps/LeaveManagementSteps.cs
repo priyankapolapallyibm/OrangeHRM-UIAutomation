@@ -50,7 +50,6 @@ public class LeaveManagementSteps
     {
         var data = table.Rows.ToDictionary(r => r["Field"], r => r["Value"]);
         await _leavePage.FillLeaveForm(
-            int.Parse(data.GetValueOrDefault("EmployeeId", "1")),
             data.GetValueOrDefault("LeaveType", "ANNUAL"),
             data.GetValueOrDefault("StartDate", ""),
             data.GetValueOrDefault("EndDate", ""),
@@ -75,22 +74,15 @@ public class LeaveManagementSteps
     [Then(@"I should see a date validation error")]
     public async Task ThenIShouldSeeADateValidationError()
     {
-        var errorVisible = await _driver.Page.Locator("[class*='error']:visible, [role='alert']:visible").CountAsync() > 0;
+        var errorVisible = await _leavePage.IsErrorDisplayed();
         Assert.That(errorVisible, Is.True, "Expected date validation error");
-    }
-
-    [Given(@"an approved leave exists for employee (.*) from ""(.*)"" to ""(.*)""")]
-    public async Task GivenAnApprovedLeaveExistsForEmployee(int empId, string start, string end)
-    {
-        // This is a pre-condition — already set up via API in test data setup
-        await Task.CompletedTask;
     }
 
     [Then(@"I should see an overlap conflict error")]
     public async Task ThenIShouldSeeAnOverlapConflictError()
     {
-        Assert.That(await _leavePage.IsOverlapErrorDisplayed(), Is.True,
-            "Expected overlap conflict error but none shown");
+        var errorVisible = await _leavePage.IsErrorDisplayed();
+        Assert.That(errorVisible, Is.True, "Expected overlap conflict error but none shown");
     }
 
     [Given(@"a pending leave request exists in the list")]
