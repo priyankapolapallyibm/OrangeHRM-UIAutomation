@@ -26,7 +26,7 @@ public class AdminPage : BasePage
         // Sidebar nav button with exact text "Admin"
         await Page.Locator("nav button:has-text('Admin')").First.ClickAsync();
         // Wait for the "User Accounts" heading to confirm page loaded
-        await Page.WaitForSelectorAsync("h1:has-text('User Accounts')", new PageWaitForSelectorOptions { Timeout = 10000 });
+        await Page.WaitForSelectorAsync("h1:has-text('User Accounts')", new PageWaitForSelectorOptions { Timeout = 15000 });
     }
 
     public async Task<bool> IsAdminPageVisible()

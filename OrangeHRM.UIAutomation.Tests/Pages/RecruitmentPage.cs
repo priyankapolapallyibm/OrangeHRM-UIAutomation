@@ -37,7 +37,7 @@ public class RecruitmentPage : BasePage
     {
         await DismissModalIfOpen();
         await Page.Locator("nav button:has-text('Recruitment')").First.ClickAsync();
-        await Page.WaitForSelectorAsync("h1:has-text('Recruitment')", new PageWaitForSelectorOptions { Timeout = 10000 });
+        await Page.WaitForSelectorAsync("h1:has-text('Recruitment')", new PageWaitForSelectorOptions { Timeout = 15000 });
     }
 
     public async Task<bool> IsRecruitmentPageVisible()

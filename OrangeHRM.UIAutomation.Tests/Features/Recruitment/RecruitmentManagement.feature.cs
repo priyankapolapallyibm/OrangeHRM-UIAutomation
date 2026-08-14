@@ -204,7 +204,7 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Recruitment
     testRunner.When("I submit the vacancy form without filling required fields", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "When ");
 #line hidden
 #line 29
-    testRunner.Then("I should see a validation error for the form", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
+    testRunner.Then("I should see a vacancy validation error", ((string)(null)), ((TechTalk.SpecFlow.Table)(null)), "Then ");
 #line hidden
             }
             this.ScenarioCleanup();

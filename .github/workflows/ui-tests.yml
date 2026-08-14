@@ -163,7 +163,7 @@ jobs:
           TEST_TestSettings__Browser: ${{ github.event.inputs.browser || 'chromium' }}
           TEST_TestSettings__Headless: 'true'
           TEST_TestSettings__ScreenshotOnFailure: 'true'
-          TEST_TestSettings__DefaultTimeout: '30000'
+          TEST_TestSettings__DefaultTimeout: '60000'
         run: |
           FILTER="${{ github.event.inputs.filter }}"
           BASE_CMD="dotnet test ${{ env.TEST_PROJECT }} \

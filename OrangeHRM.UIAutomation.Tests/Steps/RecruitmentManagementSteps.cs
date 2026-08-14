@@ -65,7 +65,7 @@ public class RecruitmentManagementSteps
             $"Vacancy '{title}' not found in list");
     }
 
-    [Then(@"I should see a validation error for the form")]
+    [Then(@"I should see a vacancy validation error")]
     public async Task ThenIShouldSeeAValidationErrorForTheForm()
     {
         // HTML5 required stops submit (no navigation) or API error appears

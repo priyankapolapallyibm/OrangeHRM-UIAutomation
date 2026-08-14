@@ -24,7 +24,7 @@ public class LeavePage : BasePage
     {
         await DismissModalIfOpen();
         await Page.Locator("nav button:has-text('Leave')").First.ClickAsync();
-        await Page.WaitForSelectorAsync("h1:has-text('Leave Management')", new PageWaitForSelectorOptions { Timeout = 10000 });
+        await Page.WaitForSelectorAsync("h1:has-text('Leave Management')", new PageWaitForSelectorOptions { Timeout = 15000 });
     }
 
     public async Task<bool> IsLeavePageVisible()

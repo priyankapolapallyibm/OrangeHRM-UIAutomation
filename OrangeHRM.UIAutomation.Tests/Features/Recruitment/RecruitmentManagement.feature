@@ -26,7 +26,7 @@ Feature: Recruitment Management
   @AddVacancy @Validation
   Scenario: Create vacancy fails when title is missing
     When I submit the vacancy form without filling required fields
-    Then I should see a validation error for the form
+    Then I should see a vacancy validation error
 
   @AddCandidate @Smoke
   Scenario: Successfully add a candidate to a vacancy

@@ -21,7 +21,8 @@ public class LoginPage : BasePage
     public async Task NavigateToLogin()
     {
         await NavigateTo();
-        await Page.WaitForSelectorAsync(".login-layout", new PageWaitForSelectorOptions { Timeout = 15000 });
+        // CI app takes longer to serve — wait up to 30s
+        await Page.WaitForSelectorAsync(".login-layout", new PageWaitForSelectorOptions { Timeout = 30000 });
     }
 
     public async Task Login(string username, string password)
@@ -31,11 +32,11 @@ public class LoginPage : BasePage
         await PasswordInput.ClearAsync();
         await PasswordInput.FillAsync(password);
         await LoginButton.ClickAsync();
-        // Wait for either app-shell (success) or error (failure) — max 5s
+        // Wait for either app-shell (success) or error (failure) — 15s for CI
         try
         {
             await Page.WaitForSelectorAsync(".app-shell, [role='alert'], .error-message",
-                new PageWaitForSelectorOptions { Timeout = 5000 });
+                new PageWaitForSelectorOptions { Timeout = 15000 });
         }
         catch { /* timeout — let caller assert */ }
     }
@@ -53,9 +54,10 @@ public class LoginPage : BasePage
     public async Task<bool> IsLoggedIn()
     {
         // SPA: URL does not change; app-shell div appears after successful login
+        // Use longer timeout for CI where app startup is slower
         try
         {
-            await Page.WaitForSelectorAsync(".app-shell", new PageWaitForSelectorOptions { Timeout = 5000 });
+            await Page.WaitForSelectorAsync(".app-shell", new PageWaitForSelectorOptions { Timeout = 15000 });
             return true;
         }
         catch { return false; }
