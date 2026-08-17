@@ -38,7 +38,7 @@ jobs:
     name: Build Test Project
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/dotnet:8.0-jammy
+      image: mcr.microsoft.com/dotnet/sdk:8.0-jammy
     steps:
       - uses: actions/checkout@v4
 
@@ -62,7 +62,7 @@ jobs:
     needs: build
     timeout-minutes: 60
     container:
-      image: mcr.microsoft.com/dotnet:8.0-jammy
+      image: mcr.microsoft.com/dotnet/sdk:8.0-jammy
     permissions:
       checks: write
       contents: read
@@ -244,7 +244,7 @@ jobs:
     if: github.event_name == 'pull_request'
     timeout-minutes: 25
     container:
-      image: mcr.microsoft.com/dotnet:8.0-jammy
+      image: mcr.microsoft.com/dotnet/sdk:8.0-jammy
     permissions:
       checks: write
       contents: read
@@ -330,7 +330,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     timeout-minutes: 60
     container:
-      image: mcr.microsoft.com/dotnet:8.0-jammy
+      image: mcr.microsoft.com/dotnet/sdk:8.0-jammy
     strategy:
       fail-fast: false
       matrix:
