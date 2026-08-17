@@ -1,87 +1,84 @@
 using AventStack.ExtentReports;
 using AventStack.ExtentReports.Reporter;
 using AventStack.ExtentReports.Reporter.Config;
+using System.Collections.Concurrent;
 
 namespace OrangeHRM.UIAutomation.Tests.Utils;
 
 /// <summary>
 /// Manages ExtentReports HTML reporting.
-/// Produces Reports/index.html with scenario-level detail.
+/// Thread-safe: each thread (feature fixture) gets its own ExtentTest instance
+/// stored in a ConcurrentDictionary keyed by thread ID. This allows
+/// Optimization 3 (parallel NUnit fixtures) to run without report corruption.
 /// </summary>
 public static class ReportManager
 {
     private static ExtentReports? _extent;
-    private static ExtentTest? _currentTest;
-    private static readonly object _lock = new();
+    private static readonly object _initLock = new();
+
+    // Thread-local test storage — safe under NUnit ParallelScope.Fixtures
+    private static readonly ConcurrentDictionary<int, ExtentTest> _tests = new();
+
+    private static ExtentTest? CurrentTest =>
+        _tests.TryGetValue(Environment.CurrentManagedThreadId, out var t) ? t : null;
 
     public static void InitializeReport()
     {
-        var reportsDir = Path.Combine(AppContext.BaseDirectory, "Reports");
-        Directory.CreateDirectory(reportsDir);
+        lock (_initLock)
+        {
+            if (_extent != null) return; // idempotent for parallel init calls
 
-        var htmlReporter = new ExtentSparkReporter(Path.Combine(reportsDir, "index.html"));
-        htmlReporter.Config.Theme = Theme.Dark;
-        htmlReporter.Config.DocumentTitle = "PeopleFlow UI Automation Report";
-        htmlReporter.Config.ReportName = "PeopleFlow HR Platform — UI Test Results";
-        htmlReporter.Config.TimeStampFormat = "MMM dd, yyyy HH:mm:ss";
+            var reportsDir = Path.Combine(AppContext.BaseDirectory, "Reports");
+            Directory.CreateDirectory(reportsDir);
 
-        _extent = new ExtentReports();
-        _extent.AttachReporter(htmlReporter);
-        _extent.AddSystemInfo("Application", "PeopleFlow HR Platform");
-        _extent.AddSystemInfo("Framework", "Playwright + SpecFlow BDD + C#");
-        _extent.AddSystemInfo("Pattern", "Page Object Model (POM)");
-        _extent.AddSystemInfo("Environment", "Local — http://localhost:5173");
-        _extent.AddSystemInfo("OS", Environment.OSVersion.ToString());
-        _extent.AddSystemInfo(".NET Version", Environment.Version.ToString());
-        _extent.AddSystemInfo("Run Date", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            var htmlReporter = new ExtentSparkReporter(Path.Combine(reportsDir, "index.html"));
+            htmlReporter.Config.Theme = Theme.Dark;
+            htmlReporter.Config.DocumentTitle = "PeopleFlow UI Automation Report";
+            htmlReporter.Config.ReportName = "PeopleFlow HR Platform — UI Test Results";
+            htmlReporter.Config.TimeStampFormat = "MMM dd, yyyy HH:mm:ss";
+
+            _extent = new ExtentReports();
+            _extent.AttachReporter(htmlReporter);
+            _extent.AddSystemInfo("Application", "PeopleFlow HR Platform");
+            _extent.AddSystemInfo("Framework", "Playwright + SpecFlow BDD + C#");
+            _extent.AddSystemInfo("Pattern", "Page Object Model (POM)");
+            _extent.AddSystemInfo("Environment", "Local — http://localhost:5173");
+            _extent.AddSystemInfo("OS", Environment.OSVersion.ToString());
+            _extent.AddSystemInfo(".NET Version", Environment.Version.ToString());
+            _extent.AddSystemInfo("Run Date", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+        }
     }
 
     public static void CreateTest(string testName, string category = "")
     {
-        lock (_lock)
+        lock (_initLock)
         {
-            _currentTest = _extent?.CreateTest(testName);
+            var test = _extent?.CreateTest(testName);
             if (!string.IsNullOrEmpty(category))
-                _currentTest?.AssignCategory(category);
+                test?.AssignCategory(category);
+            if (test != null)
+                _tests[Environment.CurrentManagedThreadId] = test;
         }
     }
 
-    public static void LogPass(string message)
-    {
-        lock (_lock) { _currentTest?.Pass(message); }
-    }
-
+    public static void LogPass(string message)    => CurrentTest?.Pass(message);
     public static void LogFail(string message, string? details = null)
     {
-        lock (_lock)
-        {
-            _currentTest?.Fail(message);
-            if (!string.IsNullOrEmpty(details))
-                _currentTest?.Fail($"<pre>{System.Net.WebUtility.HtmlEncode(details)}</pre>");
-        }
+        CurrentTest?.Fail(message);
+        if (!string.IsNullOrEmpty(details))
+            CurrentTest?.Fail($"<pre>{System.Net.WebUtility.HtmlEncode(details)}</pre>");
     }
-
-    public static void LogSkip(string message)
-    {
-        lock (_lock) { _currentTest?.Skip(message); }
-    }
-
-    public static void LogInfo(string message)
-    {
-        lock (_lock) { _currentTest?.Info(message); }
-    }
+    public static void LogSkip(string message)    => CurrentTest?.Skip(message);
+    public static void LogInfo(string message)    => CurrentTest?.Info(message);
 
     public static void AddScreenshot(string filePath, string title = "Screenshot")
     {
-        lock (_lock)
-        {
-            if (File.Exists(filePath))
-                _currentTest?.AddScreenCaptureFromPath(filePath, title);
-        }
+        if (File.Exists(filePath))
+            CurrentTest?.AddScreenCaptureFromPath(filePath, title);
     }
 
     public static void FlushReport()
     {
-        _extent?.Flush();
+        lock (_initLock) { _extent?.Flush(); }
     }
 }

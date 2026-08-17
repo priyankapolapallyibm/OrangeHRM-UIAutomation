@@ -30,7 +30,14 @@ public class AuthenticationSteps
     [Given(@"I am logged in as ""(.*)"" with password ""(.*)""")]
     public async Task GivenIAmLoggedInAs(string username, string password)
     {
+        // If storage state was restored by BeforeFeature, the browser may already
+        // be authenticated — navigate to the app root and check before re-logging in.
         await _loginPage.NavigateToLogin();
+        if (await _loginPage.IsLoggedIn())
+        {
+            Console.WriteLine($"  [AUTH] Already logged in via cached storage state — skipping Login()");
+            return;
+        }
         await _loginPage.Login(username, password);
         Assert.That(await _loginPage.IsLoggedIn(), Is.True, $"Login failed for user: {username}");
     }

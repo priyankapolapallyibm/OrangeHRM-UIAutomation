@@ -6,6 +6,10 @@ namespace OrangeHRM.UIAutomation.Tests.Drivers;
 /// <summary>
 /// Manages Playwright browser lifecycle — one browser per test run,
 /// one page per scenario (thread-safe via ScenarioContext injection).
+///
+/// Optimization 1: accepts an optional storageStatePath so BeforeScenario
+/// can restore an already-authenticated session (set in BeforeFeature),
+/// skipping re-login for every scenario and saving ~30s per test in CI.
 /// </summary>
 public class BrowserDriver : IAsyncDisposable
 {
@@ -22,15 +26,23 @@ public class BrowserDriver : IAsyncDisposable
 
     public IPage Page => _page ?? throw new InvalidOperationException("Page not initialized. Call InitializeAsync first.");
 
-    public async Task InitializeAsync()
+    /// <summary>Context exposed so BeforeFeature can call StorageStateAsync on it.</summary>
+    public IBrowserContext Context => _context ?? throw new InvalidOperationException("Context not initialized.");
+
+    /// <param name="storageStatePath">
+    ///   Optional path to a Playwright storage-state JSON file produced by
+    ///   <c>IBrowserContext.StorageStateAsync</c>. When provided the context
+    ///   starts with an already-authenticated session — no login needed.
+    /// </param>
+    public async Task InitializeAsync(string? storageStatePath = null)
     {
         _playwright = await Playwright.CreateAsync();
 
         var launchOptions = new BrowserTypeLaunchOptions
         {
             Headless = _settings.Headless,
-            SlowMo = _settings.SlowMo,
-            Args = new[] { "--no-sandbox", "--disable-dev-shm-usage" }
+            SlowMo   = _settings.SlowMo,
+            Args     = new[] { "--no-sandbox", "--disable-dev-shm-usage" }
         };
 
         _browser = _settings.Browser.ToLower() switch
@@ -40,12 +52,17 @@ public class BrowserDriver : IAsyncDisposable
             _         => await _playwright.Chromium.LaunchAsync(launchOptions)
         };
 
-        _context = await _browser.NewContextAsync(new BrowserNewContextOptions
+        var contextOptions = new BrowserNewContextOptions
         {
             ViewportSize = new ViewportSize { Width = 1280, Height = 900 },
             RecordVideoDir = null
-        });
+        };
 
+        // Restore authentication state if a storage-state file was provided
+        if (storageStatePath != null && File.Exists(storageStatePath))
+            contextOptions.StorageStatePath = storageStatePath;
+
+        _context = await _browser.NewContextAsync(contextOptions);
         _context.SetDefaultTimeout(_settings.DefaultTimeout);
         _page = await _context.NewPageAsync();
     }
@@ -58,9 +75,10 @@ public class BrowserDriver : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (_page != null) await _page.CloseAsync();
+        if (_page    != null) await _page.CloseAsync();
         if (_context != null) await _context.CloseAsync();
         if (_browser != null) await _browser.CloseAsync();
         _playwright?.Dispose();
     }
 }
+
