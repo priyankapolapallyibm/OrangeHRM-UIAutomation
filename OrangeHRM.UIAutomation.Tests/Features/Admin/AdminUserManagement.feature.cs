@@ -41,8 +41,8 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Admin
         public virtual void FeatureSetup()
         {
             testRunner = TechTalk.SpecFlow.TestRunnerManager.GetTestRunner();
-            TechTalk.SpecFlow.FeatureInfo featureInfo = new TechTalk.SpecFlow.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Admin", "Admin User Management", "  As a System Administrator\r\n  I want to manage user accounts through the Admin U" +
-                    "I\r\n  So that access control is properly enforced", ProgrammingLanguage.CSharp, featureTags);
+            TechTalk.SpecFlow.FeatureInfo featureInfo = new TechTalk.SpecFlow.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Admin", "Admin User Management", "  As a System Administrator\n  I want to manage user accounts through the Admin UI" +
+                    "\n  So that access control is properly enforced", ProgrammingLanguage.CSharp, featureTags);
             testRunner.OnFeatureStart(featureInfo);
         }
         

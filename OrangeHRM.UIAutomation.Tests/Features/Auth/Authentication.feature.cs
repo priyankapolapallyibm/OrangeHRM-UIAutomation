@@ -39,8 +39,8 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Auth
         public virtual void FeatureSetup()
         {
             testRunner = TechTalk.SpecFlow.TestRunnerManager.GetTestRunner();
-            TechTalk.SpecFlow.FeatureInfo featureInfo = new TechTalk.SpecFlow.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Auth", "Authentication", "  As a PeopleFlow user\r\n  I want to securely log in and out of the application\r\n " +
-                    " So that my data and actions are protected", ProgrammingLanguage.CSharp, featureTags);
+            TechTalk.SpecFlow.FeatureInfo featureInfo = new TechTalk.SpecFlow.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Auth", "Authentication", "  As a PeopleFlow user\n  I want to securely log in and out of the application\n  S" +
+                    "o that my data and actions are protected", ProgrammingLanguage.CSharp, featureTags);
             testRunner.OnFeatureStart(featureInfo);
         }
         

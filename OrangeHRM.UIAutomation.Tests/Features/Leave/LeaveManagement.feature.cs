@@ -41,8 +41,8 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Leave
         public virtual void FeatureSetup()
         {
             testRunner = TechTalk.SpecFlow.TestRunnerManager.GetTestRunner();
-            TechTalk.SpecFlow.FeatureInfo featureInfo = new TechTalk.SpecFlow.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Leave", "Leave Management", "  As an HR Administrator or Employee\r\n  I want to submit and manage leave request" +
-                    "s through the UI\r\n  So that employee absences are properly tracked and approved", ProgrammingLanguage.CSharp, featureTags);
+            TechTalk.SpecFlow.FeatureInfo featureInfo = new TechTalk.SpecFlow.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Leave", "Leave Management", "  As an HR Administrator or Employee\n  I want to submit and manage leave requests" +
+                    " through the UI\n  So that employee absences are properly tracked and approved", ProgrammingLanguage.CSharp, featureTags);
             testRunner.OnFeatureStart(featureInfo);
         }
         

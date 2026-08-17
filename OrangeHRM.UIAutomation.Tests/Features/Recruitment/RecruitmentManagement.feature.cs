@@ -41,8 +41,8 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Recruitment
         public virtual void FeatureSetup()
         {
             testRunner = TechTalk.SpecFlow.TestRunnerManager.GetTestRunner();
-            TechTalk.SpecFlow.FeatureInfo featureInfo = new TechTalk.SpecFlow.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Recruitment", "Recruitment Management", "  As an HR Administrator\r\n  I want to manage job vacancies and candidate pipeline" +
-                    "s through the UI\r\n  So that hiring processes are tracked end-to-end", ProgrammingLanguage.CSharp, featureTags);
+            TechTalk.SpecFlow.FeatureInfo featureInfo = new TechTalk.SpecFlow.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Recruitment", "Recruitment Management", "  As an HR Administrator\n  I want to manage job vacancies and candidate pipelines" +
+                    " through the UI\n  So that hiring processes are tracked end-to-end", ProgrammingLanguage.CSharp, featureTags);
             testRunner.OnFeatureStart(featureInfo);
         }
         
