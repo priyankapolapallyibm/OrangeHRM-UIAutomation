@@ -17,9 +17,9 @@ on:
         type: choice
         options: [ chromium, firefox, webkit ]
       filter:
-        description: 'Tag filter (e.g. Smoke, EmployeeManagement, LeaveManagement)'
+        description: 'Tag filter (e.g. Smoke, EmployeeManagement, LeaveManagement) - default: Smoke'
         required: false
-        default: ''
+        default: 'Smoke'
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Global env
@@ -165,7 +165,7 @@ jobs:
           TEST_TestSettings__ScreenshotOnFailure: 'true'
           TEST_TestSettings__DefaultTimeout: '60000'
         run: |
-          FILTER="${{ github.event.inputs.filter }}"
+          FILTER="${{ github.event.inputs.filter || 'Smoke' }}"
           BASE_CMD="dotnet test ${{ env.TEST_PROJECT }} \
             --no-build --configuration Release \
             --logger trx;LogFileName=TestResults.trx \
