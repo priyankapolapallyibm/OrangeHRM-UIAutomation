@@ -37,13 +37,10 @@ jobs:
   build:
     name: Build Test Project
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/dotnet:8.0-jammy
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup .NET ${{ env.DOTNET_VERSION }}
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Restore & Build
         run: |
@@ -64,6 +61,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     timeout-minutes: 60
+    container:
+      image: mcr.microsoft.com/dotnet:8.0-jammy
     permissions:
       checks: write
       contents: read
@@ -83,18 +82,19 @@ jobs:
           token: ${{ secrets.GH_PAT }}
           path: app
 
-      # ── Setup runtimes ──────────────────────────────────────────────────
-      - name: Setup .NET ${{ env.DOTNET_VERSION }}
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+      # ── Install runtime dependencies ────────────────────────────────────
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y curl gnupg ca-certificates apt-transport-https lsb-release
 
-      - name: Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: app/package-lock.json
+      - name: Setup Node.js repository
+        run: |
+          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+
+      - name: Install Node.js & Git
+        run: |
+          apt-get install -y nodejs git
 
       # ── Start PeopleFlow application ────────────────────────────────────
       - name: Install PeopleFlow dependencies
@@ -243,6 +243,8 @@ jobs:
     needs: build
     if: github.event_name == 'pull_request'
     timeout-minutes: 25
+    container:
+      image: mcr.microsoft.com/dotnet:8.0-jammy
     permissions:
       checks: write
       contents: read
@@ -258,15 +260,18 @@ jobs:
           token: ${{ secrets.GH_PAT }}
           path: app
 
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y curl gnupg ca-certificates apt-transport-https lsb-release
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: app/package-lock.json
+      - name: Setup Node.js repository
+        run: |
+          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+
+      - name: Install Node.js & Git
+        run: |
+          apt-get install -y nodejs git
 
       - name: Start PeopleFlow stack
         working-directory: app
@@ -324,6 +329,8 @@ jobs:
     needs: ui-tests
     if: github.event_name == 'workflow_dispatch'
     timeout-minutes: 60
+    container:
+      image: mcr.microsoft.com/dotnet:8.0-jammy
     strategy:
       fail-fast: false
       matrix:
@@ -340,15 +347,18 @@ jobs:
           token: ${{ secrets.GH_PAT }}
           path: app
 
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y curl gnupg ca-certificates apt-transport-https lsb-release
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: app/package-lock.json
+      - name: Setup Node.js repository
+        run: |
+          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+
+      - name: Install Node.js & Git
+        run: |
+          apt-get install -y nodejs git
 
       - name: Start PeopleFlow stack
         working-directory: app
