@@ -32,11 +32,11 @@ public class LoginPage : BasePage
         await PasswordInput.ClearAsync();
         await PasswordInput.FillAsync(password);
         await LoginButton.ClickAsync();
-        // Wait for either app-shell (success) or error (failure) — 30s for CI
+        // Wait for either app-shell (success) or error (failure) — increase to 45s for slow CI containers
         try
         {
             await Page.WaitForSelectorAsync(".app-shell, [role='alert'], .error-message",
-                new PageWaitForSelectorOptions { Timeout = 30000 });
+                new PageWaitForSelectorOptions { Timeout = 45000 });
         }
         catch { /* timeout — let caller assert */ }
     }

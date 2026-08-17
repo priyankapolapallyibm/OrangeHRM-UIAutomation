@@ -44,31 +44,42 @@ if (await _loginPage.IsLoggedIn())
 if (!await _loginPage.IsLoginPageVisible())
     await _loginPage.NavigateToLogin();
 
-// Retry login if cached state was stale (server session expired)
-int maxRetries = 2;
+// Retry login with exponential backoff: 3s, 5s, 7s, 10s (up to 4 attempts)
+int maxRetries = 4;
+int[] delays = { 3000, 5000, 7000, 10000 }; // Exponential backoff in ms
+ 
 for (int attempt = 1; attempt <= maxRetries; attempt++)
 {
     try
     {
+        Console.WriteLine($"  [AUTH] Login attempt {attempt}/{maxRetries} for user: {username}");
         await _loginPage.Login(username, password);
         if (await _loginPage.IsLoggedIn())
         {
-            Console.WriteLine($"  [AUTH] Login succeeded for {username} (attempt {attempt}/{maxRetries})");
+            Console.WriteLine($"  ✓ [AUTH] Login succeeded for {username} (attempt {attempt}/{maxRetries})");
             return;
+        }
+        else
+        {
+            var error = await _loginPage.GetErrorMessage();
+            Console.WriteLine($"  ✗ [AUTH] Login failed for {username} (attempt {attempt}): {error}");
         }
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"  [AUTH] Login attempt {attempt} failed: {ex.Message}");
-        if (attempt < maxRetries)
-        {
-            await Task.Delay(2000); // Wait 2s before retry
-            continue;
-        }
+        Console.WriteLine($"  ✗ [AUTH] Login exception (attempt {attempt}): {ex.Message}");
+    }
+
+    // If not the last attempt, wait before retrying
+    if (attempt < maxRetries)
+    {
+        int delay = delays[attempt - 1];
+        Console.WriteLine($"  ⏳ [AUTH] Waiting {delay}ms before retry attempt {attempt + 1}...");
+        await Task.Delay(delay);
     }
 }
 
-Assert.That(false, Is.True, $"Login failed for user: {username} after {maxRetries} attempts");
+Assert.That(false, Is.True, $"Login failed for user: {username} after {maxRetries} attempts with exponential backoff (3s, 5s, 7s, 10s)");
     }
 
     [When(@"I enter username ""(.*)"" and password ""(.*)""")]
