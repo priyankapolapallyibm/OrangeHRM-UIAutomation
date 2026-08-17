@@ -43,8 +43,8 @@ namespace OrangeHRM.UIAutomation.Tests.Features.Employee
         public virtual void FeatureSetup()
         {
             testRunner = TechTalk.SpecFlow.TestRunnerManager.GetTestRunner();
-            TechTalk.SpecFlow.FeatureInfo featureInfo = new TechTalk.SpecFlow.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Employee", "Employee Management", "  As an HR Administrator\n  I want to manage employee records through the UI\n  So " +
-                    "that accurate employee data is maintained in the system", ProgrammingLanguage.CSharp, featureTags);
+            TechTalk.SpecFlow.FeatureInfo featureInfo = new TechTalk.SpecFlow.FeatureInfo(new System.Globalization.CultureInfo("en"), "Features/Employee", "Employee Management", "  As an HR Administrator\r\n  I want to manage employee records through the UI\r\n  S" +
+                    "o that accurate employee data is maintained in the system", ProgrammingLanguage.CSharp, featureTags);
             testRunner.OnFeatureStart(featureInfo);
         }
         
