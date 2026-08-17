@@ -109,6 +109,10 @@ jobs:
         working-directory: app
         run: |
           npm run dev > /tmp/app.log 2>&1 &
+          APP_PID=$!
+          echo "App PID: $APP_PID"
+          echo "$APP_PID" > /tmp/app.pid
+          
           echo "Waiting for API to be ready (max 2 minutes)..."
           for i in $(seq 1 40); do
             if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
@@ -119,6 +123,20 @@ jobs:
             sleep 3
           done
           curl -sf http://localhost:3000/api/health || { echo "❌ API failed"; cat /tmp/app.log; exit 1; }
+
+      - name: Reset database before tests
+        working-directory: app
+        run: |
+          echo "Resetting database to clean state..."
+          npm run db:setup 2>&1 | tail -5
+          echo "✅ Database reset complete"
+
+      - name: Verify API health before tests
+        run: |
+          echo "Final pre-test health check..."
+          curl -v http://localhost:3000/api/health 2>&1 | head -15
+          echo ""
+          echo "✅ Ready for tests"
 
       - name: Wait for Web UI
         run: |
@@ -165,6 +183,18 @@ jobs:
           TEST_TestSettings__ScreenshotOnFailure: 'true'
           TEST_TestSettings__DefaultTimeout: '60000'
         run: |
+          # Monitor API health in background
+          (
+            while true; do
+              if ! curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
+                echo "[ALERT] API health check failed at $(date)"
+                curl -v http://localhost:3000/api/health 2>&1 | head -5
+              fi
+              sleep 30
+            done
+          ) &
+          MONITOR_PID=$!
+          
           FILTER="${{ github.event.inputs.filter || 'Smoke' }}"
           BASE_CMD="dotnet test ${{ env.TEST_PROJECT }} \
             --no-build --configuration Release \
@@ -178,6 +208,12 @@ jobs:
             echo "▶️ Running full test suite"
             $BASE_CMD
           fi
+          TEST_EXIT=$?
+          
+          # Stop health monitor
+          kill $MONITOR_PID 2>/dev/null || true
+          
+          exit $TEST_EXIT
 
       - name: Check app status on failure
         if: failure()
