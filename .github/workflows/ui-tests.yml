@@ -40,10 +40,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET ${{ env.DOTNET_VERSION }}
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Verify .NET ${{ env.DOTNET_VERSION }}
+        run: |
+          dotnet --version
+          dotnet --list-sdks
 
       - name: Restore & Build
         run: |
@@ -84,10 +84,10 @@ jobs:
           path: app
 
       # ── Setup runtimes ──────────────────────────────────────────────────
-      - name: Setup .NET ${{ env.DOTNET_VERSION }}
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Verify .NET ${{ env.DOTNET_VERSION }}
+        run: |
+          dotnet --version
+          dotnet --list-sdks
 
       - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
@@ -258,9 +258,8 @@ jobs:
           token: ${{ secrets.GH_PAT }}
           path: app
 
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Verify .NET ${{ env.DOTNET_VERSION }}
+        run: dotnet --version
 
       - uses: actions/setup-node@v4
         with:
@@ -340,9 +339,8 @@ jobs:
           token: ${{ secrets.GH_PAT }}
           path: app
 
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Verify .NET ${{ env.DOTNET_VERSION }}
+        run: dotnet --version
 
       - uses: actions/setup-node@v4
         with:
