@@ -179,6 +179,16 @@ jobs:
             $BASE_CMD
           fi
 
+      - name: Check app status on failure
+        if: failure()
+        run: |
+          echo "=== Checking app status ==="
+          curl -v http://localhost:3000/api/health 2>&1 || echo "API unreachable"
+          curl -v http://localhost:5173 2>&1 | head -20 || echo "Web UI unreachable"
+          echo ""
+          echo "=== App logs ==="
+          cat /tmp/app.log 2>&1 | tail -50 || echo "No app logs"
+
       # ── Artifacts ────────────────────────────────────────────────────────
       - name: Upload HTML Report
         uses: actions/upload-artifact@v4

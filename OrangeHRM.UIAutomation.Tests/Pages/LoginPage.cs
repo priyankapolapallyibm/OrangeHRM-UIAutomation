@@ -55,9 +55,10 @@ public class LoginPage : BasePage
     {
         // SPA: URL does not change; app-shell div appears after successful login
         // Also confirm nav buttons are rendered (app-shell may flash briefly)
+        // Container startup can be slower, so use generous timeouts (45s total)
         try
         {
-            await Page.WaitForSelectorAsync(".app-shell", new PageWaitForSelectorOptions { Timeout = 30000 });
+            await Page.WaitForSelectorAsync(".app-shell", new PageWaitForSelectorOptions { Timeout = 45000 });
             // Wait for at least one nav button to be rendered inside app-shell
             await Page.WaitForSelectorAsync(".app-shell nav button", new PageWaitForSelectorOptions { Timeout = 15000 });
             return true;
