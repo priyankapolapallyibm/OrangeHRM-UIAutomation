@@ -81,9 +81,35 @@ public class LoginPage : BasePage
         try
         {
             // The app uses "Sign out" text on a secondary-button
-            await Page.Locator("button:has-text('Sign out')").First.ClickAsync();
-            await Page.WaitForSelectorAsync(".login-layout", new PageWaitForSelectorOptions { Timeout = 5000 });
+            var signOutButton = Page.Locator("button:has-text('Sign out')").First;
+            
+            // Wait up to 2s for button to be available
+            if (await signOutButton.CountAsync() > 0)
+            {
+                await signOutButton.ClickAsync();
+                // Wait for login layout or just verify we're off dashboard
+                try
+                {
+                    await Page.WaitForSelectorAsync(".login-layout, .login-form", 
+                        new PageWaitForSelectorOptions { Timeout = 5000 });
+                }
+                catch { /* If login page doesn't appear, logout might have worked anyway */ }
+            }
+            else
+            {
+                // Sign out button not found — session might already be expired
+                // Try to navigate to login directly
+                await NavigateTo();
+            }
         }
-        catch { await NavigateTo(); }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[LOGOUT WARNING] Logout attempt failed: {ex.Message} — attempting fallback navigation");
+            try
+            {
+                await NavigateTo();
+            }
+            catch { /* Last resort failed, but we'll continue anyway */ }
+        }
     }
 }

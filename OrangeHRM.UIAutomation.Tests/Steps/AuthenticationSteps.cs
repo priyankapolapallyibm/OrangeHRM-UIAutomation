@@ -30,22 +30,45 @@ public class AuthenticationSteps
     [Given(@"I am logged in as ""(.*)"" with password ""(.*)""")]
     public async Task GivenIAmLoggedInAs(string username, string password)
     {
-        if (string.IsNullOrWhiteSpace(_driver.Page.Url) || _driver.Page.Url == "about:blank")
-            await _driver.Page.GotoAsync(_settings.BaseUrl);
+if (string.IsNullOrWhiteSpace(_driver.Page.Url) || _driver.Page.Url == "about:blank")
+    await _driver.Page.GotoAsync(_settings.BaseUrl);
 
-        // If storage state was restored by BeforeFeature, the browser is already
-        // authenticated. Keep this step as a semantic assertion only.
+// If storage state was restored by BeforeFeature, the browser is already
+// authenticated. Keep this step as a semantic assertion only.
+if (await _loginPage.IsLoggedIn())
+{
+    Console.WriteLine($"  [AUTH] Already logged in via cached storage state — skipping Login()");
+    return;
+}
+
+if (!await _loginPage.IsLoginPageVisible())
+    await _loginPage.NavigateToLogin();
+
+// Retry login if cached state was stale (server session expired)
+int maxRetries = 2;
+for (int attempt = 1; attempt <= maxRetries; attempt++)
+{
+    try
+    {
+        await _loginPage.Login(username, password);
         if (await _loginPage.IsLoggedIn())
         {
-            Console.WriteLine($"  [AUTH] Already logged in via cached storage state — skipping Login()");
+            Console.WriteLine($"  [AUTH] Login succeeded for {username} (attempt {attempt}/{maxRetries})");
             return;
         }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"  [AUTH] Login attempt {attempt} failed: {ex.Message}");
+        if (attempt < maxRetries)
+        {
+            await Task.Delay(2000); // Wait 2s before retry
+            continue;
+        }
+    }
+}
 
-        if (!await _loginPage.IsLoginPageVisible())
-            await _loginPage.NavigateToLogin();
-
-        await _loginPage.Login(username, password);
-        Assert.That(await _loginPage.IsLoggedIn(), Is.True, $"Login failed for user: {username}");
+Assert.That(false, Is.True, $"Login failed for user: {username} after {maxRetries} attempts");
     }
 
     [When(@"I enter username ""(.*)"" and password ""(.*)""")]
