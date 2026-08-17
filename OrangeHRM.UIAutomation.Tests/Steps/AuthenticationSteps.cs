@@ -30,6 +30,9 @@ public class AuthenticationSteps
     [Given(@"I am logged in as ""(.*)"" with password ""(.*)""")]
     public async Task GivenIAmLoggedInAs(string username, string password)
     {
+        if (string.IsNullOrWhiteSpace(_driver.Page.Url) || _driver.Page.Url == "about:blank")
+            await _driver.Page.GotoAsync(_settings.BaseUrl);
+
         // If storage state was restored by BeforeFeature, the browser is already
         // authenticated. Keep this step as a semantic assertion only.
         if (await _loginPage.IsLoggedIn())
@@ -37,6 +40,10 @@ public class AuthenticationSteps
             Console.WriteLine($"  [AUTH] Already logged in via cached storage state — skipping Login()");
             return;
         }
+
+        if (!await _loginPage.IsLoginPageVisible())
+            await _loginPage.NavigateToLogin();
+
         await _loginPage.Login(username, password);
         Assert.That(await _loginPage.IsLoggedIn(), Is.True, $"Login failed for user: {username}");
     }
