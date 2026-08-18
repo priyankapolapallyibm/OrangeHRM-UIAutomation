@@ -63,7 +63,7 @@ jobs:
     timeout-minutes: 60
     container:
       image: mcr.microsoft.com/dotnet/sdk:8.0-jammy
-      options: --memory 4gb --memswap 4gb
+      options: --memory 4g
     permissions:
       checks: write
       contents: read
