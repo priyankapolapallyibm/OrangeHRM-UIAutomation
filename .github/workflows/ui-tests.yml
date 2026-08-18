@@ -130,6 +130,17 @@ jobs:
           echo "Resetting database to clean state..."
           npm run db:setup 2>&1 | tail -5
           echo "✅ Database reset complete"
+           
+          # Verify API is still healthy after DB reset
+          echo "Verifying API health after database reset..."
+          for i in $(seq 1 5); do
+            if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
+              echo "✅ API still healthy"
+              break
+            fi
+            echo "⚠️ API health check failed, retrying in 3s..."
+            sleep 3
+          done
 
       - name: Verify API health before tests
         run: |
@@ -150,10 +161,13 @@ jobs:
       - name: Verify stack
         run: |
           echo "=== API Health ==="
-          curl -s http://localhost:3000/api/health
+          curl -s http://localhost:3000/api/health || { echo "⚠️ API health check failed, retrying..."; sleep 2; curl -s http://localhost:3000/api/health; }
           echo ""
           echo "=== Web UI HTTP ==="
           curl -sI http://localhost:5173 | head -2
+          echo ""
+          echo "=== App Status ==="
+          if [ -f /tmp/app.log ]; then tail -10 /tmp/app.log; fi
 
       # ── Build automation project ─────────────────────────────────────────
       - name: Restore automation
