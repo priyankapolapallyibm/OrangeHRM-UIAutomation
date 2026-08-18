@@ -37,15 +37,18 @@ public class BrowserDriver : IAsyncDisposable
     public async Task InitializeAsync(string? storageStatePath = null)
     {
         _playwright = await Playwright.CreateAsync();
+        var browserName = _settings.Browser.ToLowerInvariant();
 
         var launchOptions = new BrowserTypeLaunchOptions
         {
             Headless = _settings.Headless,
-            SlowMo   = _settings.SlowMo,
-            Args     = new[] { "--no-sandbox", "--disable-dev-shm-usage" }
+            SlowMo   = _settings.SlowMo
         };
 
-        _browser = _settings.Browser.ToLower() switch
+        if (browserName == "chromium")
+            launchOptions.Args = new[] { "--no-sandbox", "--disable-dev-shm-usage" };
+
+        _browser = browserName switch
         {
             "firefox" => await _playwright.Firefox.LaunchAsync(launchOptions),
             "webkit"  => await _playwright.Webkit.LaunchAsync(launchOptions),
@@ -81,4 +84,3 @@ public class BrowserDriver : IAsyncDisposable
         _playwright?.Dispose();
     }
 }
-
