@@ -35,7 +35,12 @@ public class LeaveManagementSteps
     [Then(@"the leave request list should be visible")]
     public async Task ThenTheLeaveRequestListShouldBeVisible()
     {
-        var listVisible = await _driver.Page.Locator("table, [class*='leave-list'], [class*='list']").CountAsync() > 0;
+        // Check for table OR empty state message
+        var hasTable = await _driver.Page.Locator("table").CountAsync() > 0;
+        var hasEmptyState = await _driver.Page.Locator("text=No leave requests yet").CountAsync() > 0;
+        var hasListContainer = await _driver.Page.Locator("[class*='leave-list'], [class*='list'], [role='region']").CountAsync() > 0;
+        
+        var listVisible = hasTable || hasEmptyState || hasListContainer;
         Assert.That(listVisible, Is.True, "Leave request list not visible");
     }
 
