@@ -431,6 +431,8 @@ jobs:
 
       - name: Install Playwright ${{ matrix.browser }}
         working-directory: automation/OrangeHRM.UIAutomation.Tests
+        env:
+          HOME: /root
         run: |
           dotnet build --configuration Release
           pwsh bin/Release/net8.0/playwright.ps1 install --with-deps ${{ matrix.browser }}
@@ -441,6 +443,7 @@ jobs:
           TEST_TestSettings__Browser: ${{ matrix.browser }}
           TEST_TestSettings__BaseUrl: http://localhost:5173
           TEST_TestSettings__Headless: 'true'
+          HOME: /root
         run: |
           dotnet test ${{ env.TEST_PROJECT }} \
             --no-build --configuration Release \
