@@ -211,17 +211,20 @@ jobs:
           MONITOR_PID=$!
           
           FILTER="${{ github.event.inputs.filter || 'Smoke' }}"
-          BASE_CMD="dotnet test ${{ env.TEST_PROJECT }} \
-            --no-build --configuration Release \
-            --logger trx;LogFileName=TestResults.trx \
-            --logger console;verbosity=normal"
 
           if [ -n "$FILTER" ]; then
             echo "🔍 Running with filter: Category=$FILTER"
-            $BASE_CMD --filter "Category=$FILTER"
+            dotnet test ${{ env.TEST_PROJECT }} \
+              --no-build --configuration Release \
+              --filter "Category=$FILTER" \
+              --logger "trx;LogFileName=TestResults.trx" \
+              --logger "console;verbosity=normal"
           else
             echo "▶️ Running full test suite"
-            $BASE_CMD
+            dotnet test ${{ env.TEST_PROJECT }} \
+              --no-build --configuration Release \
+              --logger "trx;LogFileName=TestResults.trx" \
+              --logger "console;verbosity=normal"
           fi
           TEST_EXIT=$?
           
@@ -359,8 +362,8 @@ jobs:
           dotnet test ${{ env.TEST_PROJECT }} \
             --no-build --configuration Release \
             --filter "Category=Smoke" \
-            --logger trx;LogFileName=SmokeResults.trx \
-            --logger console;verbosity=normal
+            --logger "trx;LogFileName=SmokeResults.trx" \
+            --logger "console;verbosity=normal"
 
       - name: Upload Smoke TRX
         uses: actions/upload-artifact@v4
@@ -431,6 +434,8 @@ jobs:
 
       - name: Install Playwright ${{ matrix.browser }}
         working-directory: automation/OrangeHRM.UIAutomation.Tests
+        env:
+          HOME: /root
         run: |
           dotnet build --configuration Release
           pwsh bin/Release/net8.0/playwright.ps1 install --with-deps ${{ matrix.browser }}
@@ -441,12 +446,13 @@ jobs:
           TEST_TestSettings__Browser: ${{ matrix.browser }}
           TEST_TestSettings__BaseUrl: http://localhost:5173
           TEST_TestSettings__Headless: 'true'
+          HOME: /root
         run: |
           dotnet test ${{ env.TEST_PROJECT }} \
             --no-build --configuration Release \
             --filter "Category=Smoke" \
-            --logger trx;LogFileName=${{ matrix.browser }}-Results.trx \
-            --logger console;verbosity=normal
+            --logger "trx;LogFileName=${{ matrix.browser }}-Results.trx" \
+            --logger "console;verbosity=normal"
 
       - name: Upload ${{ matrix.browser }} TRX
         uses: actions/upload-artifact@v4
