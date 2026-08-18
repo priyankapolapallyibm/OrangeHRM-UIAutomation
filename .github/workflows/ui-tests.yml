@@ -268,16 +268,6 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
 
-      - name: Publish Test Results
-        uses: dorny/test-reporter@v1
-        if: always()
-        with:
-          name: NUnit UI Results
-          path: automation/**/*.trx
-          reporter: dotnet-trx
-          fail-on-error: false
-          token: ${{ secrets.GITHUB_TOKEN }}
-
       # ── Summary ──────────────────────────────────────────────────────────
       - name: Write job summary
         if: always()
